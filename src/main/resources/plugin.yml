@@ -1,5 +1,5 @@
 name: ArenaSystem
 version: ${project.version}
 main: lol.maltest.arenasystem.ArenaSystem
-authors: [ mal, dan ]
+authors: [ mal, TheRealDan ]
 description: Arena system
