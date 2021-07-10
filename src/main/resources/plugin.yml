@@ -3,3 +3,6 @@ version: ${project.version}
 main: lol.maltest.arenasystem.ArenaSystem
 authors: [ mal, TheRealDan ]
 description: Arena system
+commands:
+  testpaste:
+    description: Testing schematic stuff

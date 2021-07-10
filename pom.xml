@@ -77,7 +77,7 @@
         </dependency>
         <dependency>
             <groupId>com.fastasyncworldedit</groupId>
-            <artifactId>FAWE-Bukkit</artifactId>
+            <artifactId>FAWE-Core</artifactId>
             <version>1.17-47</version>
         </dependency>
     </dependencies>
