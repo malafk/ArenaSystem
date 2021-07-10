@@ -5,10 +5,13 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 public final class ArenaSystem extends JavaPlugin {
 
+    private ArenaSystem plugin;
+
     @Override
     public void onEnable() {
         // Plugin startup logic
-        getCommand("testpaste").setExecutor(new TestPaste());
+        plugin = this;
+        getCommand("testpaste").setExecutor(new TestPaste(plugin));
     }
 
     @Override

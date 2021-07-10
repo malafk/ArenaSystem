@@ -3,6 +3,7 @@ version: ${project.version}
 main: lol.maltest.arenasystem.ArenaSystem
 authors: [ mal, TheRealDan ]
 description: Arena system
+depend: ['WorldEdit']
 commands:
   testpaste:
     description: Testing schematic stuff
