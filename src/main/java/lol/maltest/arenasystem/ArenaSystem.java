@@ -7,7 +7,7 @@ public final class ArenaSystem extends JavaPlugin {
     @Override
     public void onEnable() {
         // Plugin startup logic
-
+        System.out.println("hi");
     }
 
     @Override
