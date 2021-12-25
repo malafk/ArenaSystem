@@ -8,6 +8,8 @@ import com.sk89q.worldedit.extent.clipboard.ClipboardFormats;
 import com.sk89q.worldedit.extent.clipboard.io.ClipboardFormat;
 import com.sk89q.worldedit.math.transform.AffineTransform;
 import lol.maltest.arenasystem.ArenaSystem;
+import lol.maltest.arenasystem.arena.ArenaInstance;
+import lol.maltest.arenasystem.arena.ArenaManager;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.command.Command;
@@ -37,7 +39,6 @@ public class TestPaste implements CommandExecutor {
         if (sender instanceof Player) {
             Player player = (Player) sender;
 
-            pasteSchematic("Test1", player);
             player.sendMessage(ChatColor.GREEN + "Schem should of pasted.");
         } else {
             System.out.println("You can only use this ingame.");
@@ -46,9 +47,7 @@ public class TestPaste implements CommandExecutor {
         return false;
     }
 
-    public Clipboard pasteSchematic(String schemName, Player player) {
-
-        Location loc = player.getLocation();
+    public Clipboard pasteSchematic(String schemName, Location loc) {
 
         File schematic = new File("Schematics/" + schemName + ".schematic");
         try {
@@ -72,4 +71,6 @@ public class TestPaste implements CommandExecutor {
         }
         return null;
     }
+
+
 }

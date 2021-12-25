@@ -4,6 +4,7 @@ import org.bukkit.Location;
 
 import java.util.*;
 
+
 public class Map {
 
     private String id;
@@ -30,6 +31,7 @@ public class Map {
         if (!spawnpoints.containsKey(team)) spawnpoints.put(team, new LinkedHashSet<>());
         spawnpoints.get(team).add(relativeToOrigin);
     }
+
 
     public String getId() {
         return id;

@@ -1,7 +1,9 @@
 package lol.maltest.arenasystem.arena;
 
+import lol.maltest.arenasystem.templates.Game;
 import org.bukkit.Location;
 import org.bukkit.World;
+import org.bukkit.entity.Player;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -48,6 +50,19 @@ public class ArenaManager {
 
     public List<ArenaInstance> getArenas() {
         return new ArrayList<>(arenas.values());
+    }
+
+    public ArenaInstance getArena(Player player) {
+        return arenas.values().stream().filter(arena -> arena.getPlayers().contains(player.getUniqueId())).findFirst().orElse(null);
+    }
+
+    public ArenaInstance getArena(Game game) {
+        for(ArenaInstance a : arenas.values()) {
+            if(a.getGame().getGameUuid().equals(game.getGameUuid())) {
+                return a;
+            }
+        }
+        return null;
     }
 
     public World getWorld() {

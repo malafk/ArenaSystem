@@ -7,3 +7,5 @@ depend: ['WorldEdit']
 commands:
   testpaste:
     description: Testing schematic stuff
+  pasteschem:
+    description: LOl
