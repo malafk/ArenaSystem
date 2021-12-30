@@ -1,5 +1,6 @@
 package lol.maltest.arenasystem.arena;
 
+import lol.maltest.arenasystem.ArenaSystem;
 import lol.maltest.arenasystem.map.Map;
 import lol.maltest.arenasystem.templates.Game;
 import org.bukkit.Location;
@@ -11,6 +12,7 @@ import java.util.UUID;
 
 public class ArenaInstance {
 
+    private ArenaSystem plugin;
     private GameType gameType;
     private Game game;
     private Map map;
@@ -18,11 +20,12 @@ public class ArenaInstance {
     private HashMap<String, UUID> players;
     private boolean isFFA = true;
 
-    public ArenaInstance(ArenaManager arenaManager, Game game, GameType gameType, Map map, HashMap<String, UUID> players) {
+    public ArenaInstance(ArenaSystem plugin, ArenaManager arenaManager, Game game, GameType gameType, Map map, HashMap<String, UUID> players) {
+        this.plugin = plugin;
         this.game = game;
         this.gameType = gameType;
         this.map = map;
-        this.location = arenaManager.register(this);
+        this.location = arenaManager.register(plugin, this);
         this.players = players;
 
         checkFFA:

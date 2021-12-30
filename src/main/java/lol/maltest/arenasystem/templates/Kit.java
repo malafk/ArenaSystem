@@ -27,4 +27,12 @@ public class Kit {
         ItemStack[] armorArray = armor.toArray(new ItemStack[0]);
         player.getInventory().setArmorContents(armorArray);
     }
+
+    public Integer addContent(ItemStack item, Integer slot) {
+        return contents.put(item, slot);
+    }
+
+    public void addArmor(ItemStack item) {
+        armor.add(item);
+    }
 }

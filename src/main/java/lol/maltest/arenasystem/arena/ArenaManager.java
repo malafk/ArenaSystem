@@ -1,5 +1,6 @@
 package lol.maltest.arenasystem.arena;
 
+import lol.maltest.arenasystem.ArenaSystem;
 import lol.maltest.arenasystem.templates.Game;
 import org.bukkit.Location;
 import org.bukkit.World;
@@ -15,7 +16,7 @@ public class ArenaManager {
     private Random random = new Random();
     private HashMap<Location, ArenaInstance> arenas = new HashMap<>();
 
-    private double arenaYHeight = 64;
+    public double arenaYHeight = 64;
     private double distanceBetweenArenas = 1000;
     private int numberOfArenasPerAxis = 1000;
 
@@ -25,7 +26,10 @@ public class ArenaManager {
         this.world = world;
     }
 
-    public Location register(ArenaInstance arenaInstance) {
+    public ArenaSystem plugin;
+
+    public Location register(ArenaSystem plugin, ArenaInstance arenaInstance) {
+        this.plugin = plugin;
         Location location = getFreeArenaLocation();
         arenas.put(location, arenaInstance);
         return location;
@@ -63,6 +67,10 @@ public class ArenaManager {
             }
         }
         return null;
+    }
+
+    public ArenaSystem getPlugin() {
+        return plugin;
     }
 
     public World getWorld() {
