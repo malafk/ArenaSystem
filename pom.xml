@@ -64,7 +64,7 @@
         </repository>
         <repository>
             <id>fawe-repo</id>
-            <url>http://ci.athion.net/job/FastAsyncWorldEdit/ws/mvn/</url>
+            <url>https://ci.athion.net/job/FastAsyncWorldEdit/ws/mvn/</url>
         </repository>
         <repository>
             <id>enginehub-maven</id>

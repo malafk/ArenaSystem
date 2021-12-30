@@ -1,11 +1,14 @@
 package lol.maltest.arenasystem.arena;
 
 import dev.jcsoftware.jscoreboards.JGlobalMethodBasedScoreboard;
+import dev.jcsoftware.jscoreboards.JScoreboardTeam;
 import lol.maltest.arenasystem.templates.Game;
-import org.apache.commons.lang.CharUtils;
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
+import org.bukkit.entity.Player;
 
 import java.util.ArrayList;
+import java.util.List;
 
 public class ArenaScoreboard {
 
@@ -25,7 +28,25 @@ public class ArenaScoreboard {
     }
 
     public void addPlayersToScoreboard() {
-        game.getArenaManager().getArena(game).getPlayers().forEach(p -> scoreboard.addPlayer(Bukkit.getPlayer(p)));
+        game.getArenaManager().getArena(game).getPlayers().forEach(player -> {
+            Player p = Bukkit.getPlayer(player);
+            scoreboard.addPlayer(p);
+            int team = 0;
+            List<JScoreboardTeam> teams = scoreboard.getTeams();
+            if (teams.size() == 0) {
+                scoreboard.createTeam("red","Red", ChatColor.RED);
+            }
+            else if (teams.size() == 1) {
+                scoreboard.createTeam("blue","Blue", ChatColor.BLUE);
+                team = 1;
+            }
+            else {
+                if (teams.get(0).getEntities().size() > teams.get(1).getEntities().size()) {
+                    team = 1;
+                }
+            }
+            scoreboard.getTeams().get(team).addPlayer(p);
+        });
     }
 
     public void updateLives() {
