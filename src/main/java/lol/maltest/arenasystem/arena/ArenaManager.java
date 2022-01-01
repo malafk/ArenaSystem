@@ -1,7 +1,7 @@
 package lol.maltest.arenasystem.arena;
 
 import lol.maltest.arenasystem.ArenaSystem;
-import lol.maltest.arenasystem.templates.Game;
+import lol.maltest.arenasystem.templates.GameGame;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
@@ -16,7 +16,7 @@ public class ArenaManager {
     private Random random = new Random();
     private HashMap<Location, ArenaInstance> arenas = new HashMap<>();
 
-    public double arenaYHeight = 64;
+    public double arenaYHeight = 95;
     private double distanceBetweenArenas = 1000;
     private int numberOfArenasPerAxis = 1000;
 
@@ -26,7 +26,7 @@ public class ArenaManager {
         this.world = world;
     }
 
-    public ArenaSystem plugin;
+    public static ArenaSystem plugin;
 
     public Location register(ArenaSystem plugin, ArenaInstance arenaInstance) {
         this.plugin = plugin;
@@ -56,21 +56,22 @@ public class ArenaManager {
         return new ArrayList<>(arenas.values());
     }
 
-    public ArenaInstance getArena(Player player) {
-        return arenas.values().stream().filter(arena -> arena.getPlayers().contains(player.getUniqueId())).findFirst().orElse(null);
-    }
 
-    public ArenaInstance getArena(Game game) {
-        for(ArenaInstance a : arenas.values()) {
-            if(a.getGame().getGameUuid().equals(game.getGameUuid())) {
-                return a;
-            }
-        }
-        return null;
-    }
+//    public ArenaInstance getArena(GameGame game) {
+//        for(ArenaInstance a : arenas.values()) {
+//            if(a.getGame().getGameUuid().equals(game.getGameUuid())) {
+//                return a;
+//            }
+//        }
+//        return null;
+//    }
 
     public ArenaSystem getPlugin() {
         return plugin;
+    }
+
+    public static ArenaManager getArenaManager() {
+        return plugin.gameManager().getArenaManager();
     }
 
     public World getWorld() {

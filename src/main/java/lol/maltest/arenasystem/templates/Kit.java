@@ -28,8 +28,8 @@ public class Kit {
         player.getInventory().setArmorContents(armorArray);
     }
 
-    public Integer addContent(ItemStack item, Integer slot) {
-        return contents.put(item, slot);
+    public void addContent(ItemStack item, Integer slot) {
+        contents.put(item, slot);
     }
 
     public void addArmor(ItemStack item) {

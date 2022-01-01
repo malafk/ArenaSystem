@@ -1,8 +1,12 @@
 package lol.maltest.arenasystem.arena;
 
+import lol.maltest.arenasystem.ArenaSystem;
+import lol.maltest.arenasystem.templates.games.stickfight.StickFight;
+import lol.maltest.arenasystem.templates.games.stickfight.kit.StickFightKit;
+
 public enum GameType {
 
-    VOID_SINGLE, VOID_DOUBLES, LAVA_RISE_SINGLE, LAVA_RISE_DOUBLES;
+    STICKFIGHT_SINGLE, STICKFIGHT_DOUBLES;
 
     public boolean isFFA() {
         return countTeams() == 1;
@@ -10,8 +14,7 @@ public enum GameType {
 
     public int countTeams() {
         switch (this) {
-            case VOID_DOUBLES:
-            case LAVA_RISE_DOUBLES:
+            case STICKFIGHT_DOUBLES:
                 return 2;
             default:
                 return 1;
@@ -20,14 +23,16 @@ public enum GameType {
 
     public int getMaxPlayers() {
         switch (this) {
-            case VOID_SINGLE:
-            case LAVA_RISE_SINGLE:
+            case STICKFIGHT_SINGLE:
                 return 2;
-            case VOID_DOUBLES:
-            case LAVA_RISE_DOUBLES:
+            case STICKFIGHT_DOUBLES:
                 return 4;
             default:
                 return -1;
         }
+    }
+
+    public void createGame() {
+
     }
 }

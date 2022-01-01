@@ -1,0 +1,10 @@
+spawnlocations:
+  stickfight_map1:
+    1:
+      x: 11
+      y: 2
+      z: -5
+    2:
+      x: -11
+      y: 2
+      z: 5

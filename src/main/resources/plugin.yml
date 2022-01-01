@@ -1,11 +1,11 @@
 name: ArenaSystem
 version: ${project.version}
 main: lol.maltest.arenasystem.ArenaSystem
-authors: [ mal, TheRealDan ]
+authors: [ maltest, TheRealDan, ggtylerr ]
 description: Arena system
 depend: ['WorldEdit']
 commands:
   testpaste:
     description: Testing schematic stuff
-  pasteschem:
-    description: LOl
+  makevoid:
+    description: make void

@@ -2,23 +2,27 @@ package lol.maltest.arenasystem.arena;
 
 import dev.jcsoftware.jscoreboards.JGlobalMethodBasedScoreboard;
 import dev.jcsoftware.jscoreboards.JScoreboardTeam;
+import lol.maltest.arenasystem.GameManager;
 import lol.maltest.arenasystem.templates.Game;
+import lol.maltest.arenasystem.templates.GameGame;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 public class ArenaScoreboard {
 
-    private Game game;
+    private GameManager gameManager;
 
     private JGlobalMethodBasedScoreboard scoreboard;
 
     private ArrayList<String> lines = new ArrayList<>();
 
-    public ArenaScoreboard(Game game) {
+    public ArenaScoreboard(GameManager gameManager) {
+        this.gameManager = gameManager;
         scoreboard = new JGlobalMethodBasedScoreboard();
         lines.add("&7&m-------------------");
         lines.add("&7Waiting for players...");
@@ -27,20 +31,18 @@ public class ArenaScoreboard {
         scoreboard.setLines(lines);
     }
 
-    public void addPlayersToScoreboard() {
-        game.getArenaManager().getArena(game).getPlayers().forEach(player -> {
+    public void addPlayersToScoreboard(UUID gameUuid) {
+        gameManager.getPlayers(gameUuid).forEach(player -> {
             Player p = Bukkit.getPlayer(player);
             scoreboard.addPlayer(p);
             int team = 0;
             List<JScoreboardTeam> teams = scoreboard.getTeams();
             if (teams.size() == 0) {
-                scoreboard.createTeam("red","Red", ChatColor.RED);
-            }
-            else if (teams.size() == 1) {
-                scoreboard.createTeam("blue","Blue", ChatColor.BLUE);
+                scoreboard.createTeam("red","&c&lR", ChatColor.RED);
+            } else if (teams.size() == 1) {
+                scoreboard.createTeam("blue","&9&lB", ChatColor.BLUE);
                 team = 1;
-            }
-            else {
+            } else {
                 if (teams.get(0).getEntities().size() > teams.get(1).getEntities().size()) {
                     team = 1;
                 }
@@ -49,13 +51,19 @@ public class ArenaScoreboard {
         });
     }
 
-    public void updateLives() {
+    public void updateLives(UUID gameUuid) {
         lines.clear();
-        if(game.getArenaInstance().getPlayers().size() == 2) { // idk what im doing rn
+        if( gameManager.getPlayers(gameUuid).size() >= 2) { // idk what im doing rn
             lines.add("&7&m-------------------");
             lines.add("&f&lPlayers:");
-            lines.add("&cRed: &e3");
-            lines.add("&9Blue: &e3");
+            for(UUID pUuid : gameManager.getPlayers(gameUuid)) {
+                Player loopedPlayer = Bukkit.getPlayer(pUuid);
+                for(JScoreboardTeam team : scoreboard.getTeams()) {
+                    if(team.isOnTeam(pUuid)) {
+                        lines.add(team.getDisplayName() + " &7" + loopedPlayer.getName() + "&f: " + 1);
+                    }
+                }
+            }
             lines.add("&7&m-------------------");
         }
         scoreboard.setLines(lines);

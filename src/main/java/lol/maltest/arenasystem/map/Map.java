@@ -1,5 +1,6 @@
 package lol.maltest.arenasystem.map;
 
+import lol.maltest.arenasystem.templates.Game;
 import org.bukkit.Location;
 
 import java.util.*;
@@ -7,14 +8,12 @@ import java.util.*;
 
 public class Map {
 
-    private String id;
     private String name;
     private String schematicName;
     private HashSet<Integer> validAmountOfTeams = new HashSet<>();
-    private HashMap<Integer, LinkedHashSet<Location>> spawnpoints = new LinkedHashMap<>();
+    private HashSet<Location> spawnpoints = new HashSet<>();
 
-    public Map(String id, String name, String schematicName) {
-        this.id = id;
+    public Map(String name, String schematicName) {
         this.name = name;
         this.schematicName = schematicName;
     }
@@ -27,15 +26,11 @@ public class Map {
         }
     }
 
-    public void addSpawnpoint(Location relativeToOrigin, int team) {
-        if (!spawnpoints.containsKey(team)) spawnpoints.put(team, new LinkedHashSet<>());
-        spawnpoints.get(team).add(relativeToOrigin);
+    public void addSpawnpoint(Location relativeToOrigin) {
+        spawnpoints.add(relativeToOrigin);
     }
 
 
-    public String getId() {
-        return id;
-    }
 
     public String getName() {
         return name;
@@ -53,9 +48,9 @@ public class Map {
         return getValidAmountOfTeams().contains(teams);
     }
 
-    public List<Location> getSpawnpoints(Location origin, int team) {
+    public List<Location> getSpawnpoints(Location origin) {
         List<Location> spawnpoints = new ArrayList<>();
-        for (Location relative : this.spawnpoints.get(team))
+        for (Location relative : this.spawnpoints)
             spawnpoints.add(origin.clone().add(relative));
         return spawnpoints;
     }
