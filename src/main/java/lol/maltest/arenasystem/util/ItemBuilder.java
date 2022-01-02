@@ -26,9 +26,6 @@ public class ItemBuilder {
         stack = new ItemStack(mat, a);
     }
 
-    public ItemBuilder(Material mat, short sh) {
-        stack = new ItemStack(mat, 1, sh);
-    }
 
     public ItemMeta getItemMeta() {
         return stack.getItemMeta();

@@ -62,12 +62,13 @@ public class ArenaInstance {
             ClipboardFormat format = ClipboardFormats.findByFile(schematic);
             if (format != null) {
                 Schematic schem = format.load(schematic);
-                Timer timeToPaste = new Timer();
+                Date beforepaste = new Date();
                 AffineTransform transform = new AffineTransform();
                 transform = transform.rotateY(180);
                 EditSession session = schem.paste(BukkitUtil.getLocalWorld(loc.getWorld()),
                         new Vector(loc.getX(), loc.getY(), loc.getZ()), false, false, transform);
-                System.out.println("Pasting in the schem");
+                Date afterPaste = new Date();
+                System.out.println("Pasting in the schem took " + (beforepaste.getTime() - afterPaste.getTime()));
                 session.flushQueue();
             } else {
                 System.out.println("Could not load schematic: " + schemName + ". Does not exist at location "

@@ -46,6 +46,16 @@ public class StickFight implements Game, Listener {
     }
 
     @Override
+    public void doDeath(Player player) {
+
+    }
+
+    @Override
+    public void doRespawn(Player player) {
+
+    }
+
+    @Override
     public GameGame.GameState getGameState() {
         return null;
     }
@@ -53,6 +63,11 @@ public class StickFight implements Game, Listener {
     @Override
     public GameplayFlags getGameplayFlags() {
         return null;
+    }
+
+    @Override
+    public int getDefaultLives() {
+        return 0;
     }
 
     @Override

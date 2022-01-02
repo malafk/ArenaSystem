@@ -11,6 +11,7 @@ public class MapSettings {
     public ArrayList<Map> stickFightMaps = new ArrayList<>();
 
     private GameManager gameManager;
+    public Map stickFightOne;
 
     public MapSettings(GameManager gameManager) {
         this.gameManager = gameManager;
@@ -18,9 +19,10 @@ public class MapSettings {
     }
 
     private void addStickFightMaps() {
-        Map mapOne = new Map("Testing Map", "stickmap");
-        mapOne.addSpawnpoint(new Location(Bukkit.getWorld("void"), -15, 5, -26));
-        mapOne.addSpawnpoint(new Location(Bukkit.getWorld("void"), -41, 5, -26));
-        stickFightMaps.add(mapOne);
+        stickFightOne = new Map("Testing Map", "stickmap");
+        stickFightOne.addSpawnpoint(new Location(Bukkit.getWorld("void"), -15, 5, -26));
+        stickFightOne.addSpawnpoint(new Location(Bukkit.getWorld("void"), -41, 5, -26));
+        stickFightMaps.add(stickFightOne);
     }
+
 }

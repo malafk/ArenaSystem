@@ -14,9 +14,12 @@ public interface Game {
     public void end();
     public void teleportToSpawnLocations();
     public void someoneJoined(Player player, boolean spectator);
+    public void doDeath(Player player);
+    public void doRespawn(Player player);
 
     public GameGame.GameState getGameState();
     public GameplayFlags getGameplayFlags();
+    public int getDefaultLives();
     public int getMinPlayers();
     public int getMaxPlayers();
 

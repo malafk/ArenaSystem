@@ -10,8 +10,10 @@ import lol.maltest.arenasystem.arena.ArenaInstance;
 import lol.maltest.arenasystem.arena.ArenaManager;
 import lol.maltest.arenasystem.map.MapSettings;
 import lol.maltest.arenasystem.templates.Game;
+import lol.maltest.arenasystem.templates.GamePlayer;
 import lol.maltest.arenasystem.templates.GameplayFlags;
 import org.bukkit.Bukkit;
+import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
 
@@ -19,6 +21,7 @@ import java.awt.datatransfer.Clipboard;
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class GameManager {
 
@@ -34,8 +37,8 @@ public class GameManager {
     }
 
     private HashMap<UUID, Game> activeGames = new HashMap<>();
-    private HashMap<UUID, UUID> playerGame = new HashMap<>();
-    // gameUuid, playerUUid
+    private HashMap<GamePlayer, UUID> playerGame = new HashMap<>();
+    // player, game
 
     public void addGame(UUID gameUuid, Game game) {
         // this is what happens when we want to create a new game instance
@@ -49,23 +52,24 @@ public class GameManager {
         activeGames.put(gameUuid, game);
     }
 
-    public void addPlayerToGame(UUID gameUuid, Player player, boolean spectator) {
+    public void addPlayerToGame(UUID gameUuid, Player player, int lives, boolean spectator) {
         Game game = activeGames.getOrDefault(gameUuid, null);
 
         if (game == null) {
             Bukkit.getLogger().severe("tried to add a player to a game that doesn't exist! " + gameUuid.toString());
         }
+        System.out.println(player.getName() + " got added to a game");
 
-        playerGame.put(player.getUniqueId(), gameUuid);
+        playerGame.put(new GamePlayer(player.getUniqueId(), lives), gameUuid);
 
         game.someoneJoined(player, spectator);
 
         if(spectator) return;
 
-//        if (getPlayers(gameUuid).size() >= game.getMaxPlayers()) {
+        if (getPlayers(gameUuid).size() >= game.getMaxPlayers()) {
             // game is full! we should start it
             startGame(gameUuid);
-//        }
+        }
     }
 
 
@@ -79,16 +83,26 @@ public class GameManager {
         game.start();
     }
 
+    public GamePlayer getPlayerObject(UUID playerUuid) {
+        ArrayList<UUID> players = new ArrayList<>();
+        for(GamePlayer gamePlayer : playerGame.keySet()) {
+            if(gamePlayer.getPlayerUuid() == playerUuid) {
+                return gamePlayer;
+            }
+        }
+        return null;
+    }
 
     public ArrayList<UUID> getPlayers(UUID gameUuid) {
         ArrayList<UUID> players = new ArrayList<>();
-        for(UUID playerUuid : playerGame.keySet()) {
+        for(GamePlayer playerUuid : playerGame.keySet()) {
             if(playerGame.get(playerUuid).equals(gameUuid)) {
-                players.add(playerUuid);
+                players.add(playerUuid.getPlayerUuid());
             }
         }
         return players;
     }
+
 
     public ArenaManager getArenaManager() {
         return arenaManager;
