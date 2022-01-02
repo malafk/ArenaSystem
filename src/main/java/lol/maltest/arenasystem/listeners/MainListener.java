@@ -1,10 +1,13 @@
 package lol.maltest.arenasystem.listeners;
 
+import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.LeavesDecayEvent;
 import org.bukkit.event.entity.CreatureSpawnEvent;
 import org.bukkit.event.entity.EntitySpawnEvent;
+import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.weather.WeatherChangeEvent;
 
 public class MainListener implements Listener {
@@ -24,6 +27,11 @@ public class MainListener implements Listener {
     @EventHandler
     public void onWeatherChange(WeatherChangeEvent e) {
         e.setCancelled(true);
+    }
+
+    @EventHandler
+    public void onJoin(PlayerJoinEvent e) {
+        e.getPlayer().teleport(new Location(Bukkit.getWorld("void"), 0, 5, 0));
     }
 
 }

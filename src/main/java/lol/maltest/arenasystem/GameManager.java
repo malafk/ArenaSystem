@@ -1,25 +1,22 @@
 package lol.maltest.arenasystem;
 
-import com.boydti.fawe.object.schematic.Schematic;
-import com.sk89q.worldedit.EditSession;
-import com.sk89q.worldedit.bukkit.BukkitUtil;
-import com.sk89q.worldedit.extent.clipboard.ClipboardFormats;
-import com.sk89q.worldedit.extent.clipboard.io.ClipboardFormat;
-import com.sk89q.worldedit.math.transform.AffineTransform;
+import dev.jcsoftware.jscoreboards.JScoreboardTeam;
 import lol.maltest.arenasystem.arena.ArenaInstance;
 import lol.maltest.arenasystem.arena.ArenaManager;
 import lol.maltest.arenasystem.map.MapSettings;
 import lol.maltest.arenasystem.templates.Game;
 import lol.maltest.arenasystem.templates.GamePlayer;
-import lol.maltest.arenasystem.templates.GameplayFlags;
-import org.bukkit.Bukkit;
-import org.bukkit.GameMode;
-import org.bukkit.Location;
+import lol.maltest.arenasystem.util.ChatUtil;
+import org.apache.commons.lang.StringUtils;
+import org.bukkit.*;
+import org.bukkit.entity.EntityType;
+import org.bukkit.entity.Firework;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.meta.FireworkMeta;
+import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.util.StringUtil;
+import org.bukkit.util.Vector;
 
-import java.awt.datatransfer.Clipboard;
-import java.io.File;
-import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -60,9 +57,31 @@ public class GameManager {
         }
         System.out.println(player.getName() + " got added to a game");
 
-        playerGame.put(new GamePlayer(player.getUniqueId(), lives), gameUuid);
+        playerGame.put(new GamePlayer(player.getUniqueId(), gameUuid, lives), gameUuid);
 
         game.someoneJoined(player, spectator);
+
+        if(spectator) return;
+
+        if (getPlayers(gameUuid).size() >= game.getMaxPlayers()) {
+            // game is full! we should start it
+            startGame(gameUuid);
+        }
+    }
+
+    public void addPlayerToGame(UUID gameUuid, ArrayList<Player> player, int lives, boolean spectator) {
+        Game game = activeGames.getOrDefault(gameUuid, null);
+
+        if (game == null) {
+            Bukkit.getLogger().severe("tried to add a player to a game that doesn't exist! " + gameUuid.toString());
+        }
+
+
+        player.forEach(p -> {
+            System.out.println(p.getName() + " got added to a game");
+            playerGame.put(new GamePlayer(p.getUniqueId(), gameUuid, lives), gameUuid);
+            game.someoneJoined(p, spectator);
+        });
 
         if(spectator) return;
 
@@ -80,11 +99,114 @@ public class GameManager {
             Bukkit.getLogger().severe("Cant get that game.. probs doesnt exist");
         }
 
+
         game.start();
     }
 
+    public void endGame(UUID uuid, boolean teams) {
+        Game game = activeGames.getOrDefault(uuid, null);
+
+        if(game == null) {
+            Bukkit.getLogger().severe("Cant get that game.. probs doesnt exist");
+            return;
+        }
+        ArrayList<String> teamWhoWon = new ArrayList<>();
+
+        getTeamsAlive(uuid).get(0).getEntities().forEach(p -> {
+            teamWhoWon.add(Bukkit.getPlayer(p).getName());
+        });
+        Player whoWon = Bukkit.getPlayer(getPlayersAlive(uuid).get(0));
+        new BukkitRunnable() {
+            int amountOfFireworks = 5;
+            @Override
+            public void run() {
+
+                int r = (int) (Math.random() * 256);
+                int g = (int) (Math.random() * 256);
+                int b = (int) (Math.random() * 256);
+
+                Location newLocation = whoWon.getLocation().add(new Vector(Math.random() - 0.5, 0, Math.random() - 0.5).multiply(5));
+
+                spawnFireworks(newLocation, 1, Color.fromRGB(r, g, b));
+
+                amountOfFireworks--;
+                if(amountOfFireworks == 0) {
+                    cancel();
+                }
+            }
+        }.runTaskTimer(plugin, 0, 20);
+        game.broadcastMessage("&7" + uuid);
+        game.broadcastMessage("&7&m--------------------------");
+        game.broadcastMessage("&6");
+        game.broadcastMessage("&e&lGame Ended!");
+        game.broadcastMessage("");
+        game.broadcastMessage("&7The winning team is: " + whoWon.getScoreboard().getPlayerTeam(whoWon).getName());
+        if(teams) {
+            game.broadcastMessage("&7Winners: &e" + StringUtils.join(teamWhoWon, ", "));
+        } else {
+            game.broadcastMessage("&7Winners: &e" + whoWon.getName());
+
+        }
+        game.broadcastMessage("&6");
+        game.broadcastMessage("&7Kills:");
+        HashMap<UUID, Integer> result = getKillers(uuid).entrySet().stream().sorted(Map.Entry.comparingByValue()).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (oldValue, newValue) -> oldValue, LinkedHashMap::new));
+        int i = 1;
+        System.out.println("unsorted killers: " + getKillers(uuid).size());
+        System.out.println("sorted killers: " + result.size());
+        for (Map.Entry<UUID, Integer> entry : result.entrySet()) {
+            UUID key = entry.getKey();
+            Integer kills = entry.getValue();
+            Player player = Bukkit.getPlayer(key);
+            if(i == 3) {
+                game.broadcastMessage("&c1st &7 - " + player.getName() + "- " + kills);
+            }
+            if(i == 2) {
+                game.broadcastMessage("&62nd &7 - " + player.getName() + "- " + kills);
+            }
+            if(i == 1) {
+                game.broadcastMessage("&e3rd &7 - " + player.getName() + "- " + kills);
+            }
+            if(i == result.size()) {
+                break;
+            }
+            i++;
+        }
+        game.broadcastMessage("&c");
+        game.broadcastMessage("&7&m--------------------------");
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                getPlayers(uuid).forEach(p -> {
+                    Player player = Bukkit.getPlayer(p);
+                    player.setGameMode(GameMode.SURVIVAL);
+                    player.teleport(new Location(arenaManager.getWorld(), 0, 5,0));
+                    // TODO: bungee send to hub
+                    game.end();
+                    playerGame.remove(getPlayerObject(p));
+                });
+                activeGames.remove(uuid);
+            }
+        }.runTaskLater(plugin, 20 * 8);
+    }
+
+    public void spawnFireworks(Location location, int amount, Color color){
+        Location loc = location;
+        Firework fw = (Firework) loc.getWorld().spawnEntity(loc, EntityType.FIREWORK);
+        FireworkMeta fwm = fw.getFireworkMeta();
+
+        fwm.setPower(2);
+        fwm.addEffect(FireworkEffect.builder().withColor(color).flicker(true).build());
+
+        fw.setFireworkMeta(fwm);
+        fw.detonate();
+
+        for(int i = 0;i<amount; i++){
+            Firework fw2 = (Firework) loc.getWorld().spawnEntity(loc, EntityType.FIREWORK);
+            fw2.setFireworkMeta(fwm);
+        }
+    }
+
     public GamePlayer getPlayerObject(UUID playerUuid) {
-        ArrayList<UUID> players = new ArrayList<>();
         for(GamePlayer gamePlayer : playerGame.keySet()) {
             if(gamePlayer.getPlayerUuid() == playerUuid) {
                 return gamePlayer;
@@ -93,15 +215,69 @@ public class GameManager {
         return null;
     }
 
+    public ArrayList<JScoreboardTeam> getTeamsAlive(UUID gameUuid) {
+        ArrayList<JScoreboardTeam> aliveTeams = new ArrayList<>();
+        Game game = activeGames.getOrDefault(gameUuid, null);
+        for(JScoreboardTeam team : game.getScoreboard().getScoreboard().getTeams()) {
+            for(UUID p : team.getEntities()) {
+                Player pl = Bukkit.getPlayer(p);
+                if(getPlayerObject(p).getLives() > 0) {
+                    aliveTeams.add(team);
+                    break;
+                }
+            }
+        }
+
+        return aliveTeams;
+    }
+
+    public ArrayList<UUID> getPlayersAlive(UUID gameUuid) {
+        ArrayList<UUID> players = new ArrayList<>();
+        for(GamePlayer player : playerGame.keySet()) {
+            if(player.getGameUuid().equals(gameUuid)) {
+                if(player.getLives() >= 1) {
+                    players.add(player.getPlayerUuid());
+                }
+            }
+        }
+        return players;
+    }
+
+    public HashMap<UUID, Integer> getKillers(UUID gameUuid) {
+        HashMap<UUID, Integer> killers = new HashMap<>();
+        for(GamePlayer player : playerGame.keySet()) {
+            if(player.getGameUuid().equals(gameUuid)) {
+                if(player.getKills() > 0) {
+                    killers.put(player.getPlayerUuid(), player.getKills());
+                }
+            }
+        }
+        return killers;
+    }
+
+    public int getUniqueKills(UUID gameUuid) {
+        int kills = 0;
+        for(GamePlayer playerUuid : playerGame.keySet()) {
+            if(playerUuid.getGameUuid().equals(gameUuid)) {
+                if(playerUuid.getKills() > 0) {
+                    kills++;
+                }
+            }
+        }
+        return kills;
+    }
+
     public ArrayList<UUID> getPlayers(UUID gameUuid) {
         ArrayList<UUID> players = new ArrayList<>();
         for(GamePlayer playerUuid : playerGame.keySet()) {
-            if(playerGame.get(playerUuid).equals(gameUuid)) {
+            if(playerUuid.getGameUuid().equals(gameUuid)) {
                 players.add(playerUuid.getPlayerUuid());
             }
         }
         return players;
     }
+
+
 
 
     public ArenaManager getArenaManager() {

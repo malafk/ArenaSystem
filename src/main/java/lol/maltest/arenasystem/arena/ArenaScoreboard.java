@@ -12,6 +12,7 @@ import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
@@ -46,9 +47,9 @@ public class ArenaScoreboard {
             int team = 0;
             List<JScoreboardTeam> teams = scoreboard.getTeams();
             if (teams.size() == 0) {
-                scoreboard.createTeam("red","&c&lR &7", ChatColor.RED);
+                scoreboard.createTeam("&c&lRed","&c&lR &7", ChatColor.RED);
             } else if (teams.size() == 1) {
-                scoreboard.createTeam("blue","&b&lB &7", ChatColor.AQUA);
+                scoreboard.createTeam("&b&lBlue","&b&lB &7", ChatColor.AQUA);
                 team = 1;
             } else {
                 if (teams.get(0).getEntities().size() > teams.get(1).getEntities().size()) {
@@ -69,6 +70,7 @@ public class ArenaScoreboard {
                 System.out.println("scoreboaqrd loop " + loopedPlayer.getName());
                 for(JScoreboardTeam team : scoreboard.getTeams()) {
                     if(team.isOnTeam(pUuid)) {
+                        System.out.println("lives: " + gameManager.getPlayerObject(loopedPlayer.getUniqueId()).getLives());
                         lines.add(team.getDisplayName() + " &7" + loopedPlayer.getName() + "&f: " + gameManager.getPlayerObject(loopedPlayer.getUniqueId()).getLives());
                     }
                 }
@@ -76,8 +78,9 @@ public class ArenaScoreboard {
             lines.add("&7&m-------------------");
         System.out.println("lines size: " + lines.size());
         System.out.println("updating scoreboard....");
+        lines.forEach(System.out::println);
         scoreboard.setLines(lines);
-        scoreboard.updateScoreboard();
+//        scoreboard.setLines(Arrays.asList(lines));
     }
 
     public JGlobalMethodBasedScoreboard getScoreboard() {

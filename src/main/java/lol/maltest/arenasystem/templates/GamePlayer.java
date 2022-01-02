@@ -9,13 +9,17 @@ import java.util.UUID;
 public class GamePlayer {
 
     UUID playerUuid;
+    UUID gameUuid;
     int lives;
+    int kills;
 //    JScoreboardTeam team;
 
-    public GamePlayer(UUID playerUuid, int lives) {
+    public GamePlayer(UUID playerUuid, UUID gameUuid, int lives) {
 //        this.team = team;
+        this.gameUuid = gameUuid;
         this.playerUuid = playerUuid;
         this.lives = lives;
+        this.kills = 0;
     }
 
     public int getLives() {
@@ -30,8 +34,20 @@ public class GamePlayer {
         lives += amount;
     }
 
+    public void addKill(int amount) {
+        kills += amount;
+    }
+
+    public int getKills() {
+        return kills;
+    }
+
     public UUID getPlayerUuid() {
         return playerUuid;
+    }
+
+    public UUID getGameUuid() {
+        return gameUuid;
     }
 
     //    public JScoreboardTeam getTeam() {

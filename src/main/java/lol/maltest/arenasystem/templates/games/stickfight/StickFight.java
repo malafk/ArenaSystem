@@ -2,6 +2,7 @@ package lol.maltest.arenasystem.templates.games.stickfight;
 
 import lol.maltest.arenasystem.arena.ArenaInstance;
 import lol.maltest.arenasystem.arena.ArenaManager;
+import lol.maltest.arenasystem.arena.ArenaScoreboard;
 import lol.maltest.arenasystem.templates.Game;
 import lol.maltest.arenasystem.templates.GameGame;
 import lol.maltest.arenasystem.templates.GameplayFlags;
@@ -24,6 +25,8 @@ public class StickFight implements Game, Listener {
     public void setArena(ArenaInstance arena) {
 
     }
+
+
 
     @Override
     public void start() {
@@ -56,6 +59,11 @@ public class StickFight implements Game, Listener {
     }
 
     @Override
+    public void broadcastMessage(String message) {
+
+    }
+
+    @Override
     public GameGame.GameState getGameState() {
         return null;
     }
@@ -78,6 +86,11 @@ public class StickFight implements Game, Listener {
     @Override
     public int getMaxPlayers() {
         return 0;
+    }
+
+    @Override
+    public ArenaScoreboard getScoreboard() {
+        return null;
     }
 
     @Override
