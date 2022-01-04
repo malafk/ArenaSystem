@@ -34,6 +34,10 @@ public class GamePlayer {
         lives += amount;
     }
 
+    public void setLives(int amount) {
+        lives = amount;
+    }
+
     public void addKill(int amount) {
         kills += amount;
     }

@@ -18,8 +18,8 @@ public interface Game {
     public void doDeath(Player player);
     public void doRespawn(Player player);
     public void broadcastMessage(String message);
+    public void tryEnd();
 
-    public GameGame.GameState getGameState();
     public GameplayFlags getGameplayFlags();
     public int getDefaultLives();
     public int getMinPlayers();

@@ -3,6 +3,7 @@ package lol.maltest.arenasystem.templates.games.stickfight;
 import com.comphenix.protocol.PacketType;
 import com.comphenix.protocol.events.PacketContainer;
 import com.comphenix.protocol.wrappers.BlockPosition;
+import com.connorlinfoot.titleapi.TitleAPI;
 import dev.jcsoftware.jscoreboards.JScoreboardTeam;
 import lol.maltest.arenasystem.GameManager;
 import lol.maltest.arenasystem.arena.ArenaInstance;
@@ -14,7 +15,6 @@ import lol.maltest.arenasystem.templates.GameplayFlags;
 import lol.maltest.arenasystem.templates.games.stickfight.kit.StickFightKit;
 import lol.maltest.arenasystem.util.ChatUtil;
 import lol.maltest.arenasystem.util.ItemBuilder;
-import lol.maltest.arenasystem.util.TitleAPI;
 import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
@@ -23,16 +23,13 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.ItemMeta;
-import org.bukkit.potion.PotionEffect;
-import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.Vector;
 
 import java.lang.reflect.InvocationTargetException;
-import java.time.LocalDate;
 import java.util.*;
 
 public class StickFight implements Game, Listener {
@@ -70,7 +67,7 @@ public class StickFight implements Game, Listener {
         this.gameManager = gameManager;
         this.uuid = uuid;
         this.stickFightKit = new StickFightKit();
-        this.arenaScoreboard = new ArenaScoreboard(gameManager);
+        this.arenaScoreboard = new ArenaScoreboard(gameManager, "Stick Fight (TEST)");
         Bukkit.getPluginManager().registerEvents(this, gameManager.getPlugin());
 
         allowToPlace.add(Material.WOOL);
@@ -127,6 +124,9 @@ public class StickFight implements Game, Listener {
         if (gameManager.getPlayers(uuid).size() <= 2) {
             for(UUID pUuid : gameManager.getPlayers(uuid)) {
                 Player player = Bukkit.getPlayer(pUuid);
+                if(player.isDead()) {
+                    player.spigot().respawn();
+                }
                 for (java.util.Map.Entry<Location, Boolean> entry : spawnLocationsStart.entrySet()) {
                     Boolean used = entry.getValue();
                     Location loc = entry.getKey();
@@ -137,6 +137,7 @@ public class StickFight implements Game, Listener {
                         System.out.println("teleported " + player + " to " + loc);
                         alreadyTeleported.add(pUuid);
                         player.setGameMode(GameMode.SURVIVAL);
+                        stickFightKit.giveKit(player);
                     }
                 }
             }
@@ -157,6 +158,7 @@ public class StickFight implements Game, Listener {
                     System.out.println("teleported " + player + " to " + loc);
                     alreadyTeleported.add(p);
                     player.setGameMode(GameMode.SURVIVAL);
+                    stickFightKit.giveKit(player);
                 }
             }
             for (java.util.Map.Entry<Location, Boolean> entry : spawnLocationsStart.entrySet()) {
@@ -178,7 +180,6 @@ public class StickFight implements Game, Listener {
     @Override
     public void someoneJoined(Player player, boolean spectator) {
         if(!spectator) {
-            stickFightKit.giveKit(player);
             player.sendMessage(ChatUtil.clr("&7You have been put in to " + uuid));
         }
     }
@@ -186,10 +187,13 @@ public class StickFight implements Game, Listener {
     @Override
     public void doDeath(Player player) {
         gameManager.getPlayerObject(player.getUniqueId()).takeLive(1);
-        if(gameManager.getPlayerObject(player.getUniqueId()).getLives() == 0) {
+        arenaScoreboard.updateLives(uuid);
+
+        if(gameManager.getPlayerObject(player.getUniqueId()).getLives() <= 0) {
             broadcastMessage("&e" + player.getName() + " &7has been eliminated!");
-            TitleAPI titleDie = new TitleAPI(ChatUtil.clr("&C&lELIMINATED"));
-            titleDie.sendToPlayer(player);
+            TitleAPI.sendTitle(player, 15, 40, 15, ChatUtil.clr("&c&lELIMINATED!"), ChatUtil.clr("&7Better luck next time!"));
+//            TitleAPI titleDie = new TitleAPI(ChatUtil.clr("&C&lELIMINATED"));
+//            titleDie.sendToPlayer(player);
             player.teleport(arenaInstance.getLocation());
             player.setGameMode(GameMode.SPECTATOR);
             player.setAllowFlight(true);
@@ -198,25 +202,10 @@ public class StickFight implements Game, Listener {
             player.setFoodLevel(20);
             player.closeInventory();
             player.getInventory().clear();
-            arenaScoreboard.updateLives(uuid);
-            if(gameManager.getPlayers(uuid).size() > 2) {
-                if(gameManager.getPlayersAlive(uuid).size() <= 2) {
-                    if(gameManager.getTeamsAlive(uuid).size() <= 1) {
-                        setGameState(GameState.WON);
-                        gameManager.endGame(uuid, true);
-                        return;
-                    }
-                }
-                return;
-            }
-            if(gameManager.getPlayersAlive(uuid).size() <= 1) {
-                setGameState(GameState.WON);
-                gameManager.endGame(uuid, false);
-            }
+            tryEnd();
             return;
         }
         broadcastMessage("&e" + player.getName() + " &7has &e" +  gameManager.getPlayerObject(player.getUniqueId()).getLives() + " &7lives left.");
-        arenaScoreboard.updateLives(uuid);
         player.teleport(arenaInstance.getLocation());
         player.setGameMode(GameMode.SPECTATOR);
 //        player.addPotionEffect(new PotionEffect(PotionEffectType.INVISIBILITY, 1000000, 10));
@@ -231,10 +220,13 @@ public class StickFight implements Game, Listener {
             @Override
             public void run() {
                 if(seconds != 0) {
-                    TitleAPI titleDie = new TitleAPI(ChatUtil.clr("&e&lYOU DIED!"));
-                    titleDie.SubTitle(ChatUtil.clr("&7You will respawn in &c" + seconds + " &7seconds!"));
-                    titleDie.sendToPlayer(player);
-                } else {
+                    TitleAPI.sendTitle(player, 5, 30, 0, ChatUtil.clr("&c&lYOU DIED!"), ChatUtil.clr("&7You will respawn in &c" + seconds + " &7seconds!"));
+//                    TitleAPI titleDie = new TitleAPI(ChatUtil.clr("&e&lYOU DIED!"));
+//                    titleDie.SubTitle(ChatUtil.clr("&7You will respawn in &c" + seconds + " &7seconds!"));
+//                    titleDie.sendToPlayer(player);
+                }
+                if(seconds == 0) {
+                    TitleAPI.sendTitle(player, 15, 30, 15, ChatUtil.clr("&e&lRESPAWNED!"), "");
                     doRespawn(player);
                     cancel();
                 }
@@ -264,8 +256,21 @@ public class StickFight implements Game, Listener {
     }
 
     @Override
-    public GameGame.GameState getGameState() {
-        return null;
+    public void tryEnd() {
+        if(gameManager.getPlayers(uuid).size() >= 2) {
+            if(gameManager.getPlayersAlive(uuid).size() >= 2) {
+                if(gameManager.getTeamsAlive(uuid).size() <= 1) {
+                    setGameState(GameState.WON);
+                    gameManager.endGame(uuid, true);
+                    return;
+                }
+            }
+        }
+        if(gameManager.getPlayersAlive(uuid).size() <= 1) {
+            System.out.println("ending game");
+            setGameState(GameState.WON);
+            gameManager.endGame(uuid, false);
+        }
     }
 
     @Override
@@ -316,6 +321,7 @@ public class StickFight implements Game, Listener {
             if(damager.getScoreboard().getPlayerTeam(damager).getEntries().contains(target.getName())) {
                 damager.sendMessage(ChatUtil.clr("&cFriendly fire is disabled."));
                 e.setCancelled(true);
+                return;
             }
             lastHitter.put(target.getUniqueId(), damager.getUniqueId());
 //            lasthit = target.getUniqueId();
@@ -324,6 +330,18 @@ public class StickFight implements Game, Listener {
                 doDeath(target);
                 broadcastMessage("&e" + target.getName() + " &7was killed by &e" + damager.getName());
                 gameManager.getPlayerObject(damager.getUniqueId()).addKill(1);
+            }
+        }
+    }
+
+    @EventHandler
+    public void onDamage(EntityDamageEvent e) {
+        if(gameState != GameState.ACTIVE) return;
+        if(e.getEntity() instanceof Player) {
+            Player target = (Player) e.getEntity();
+            if(target.getHealth() - e.getFinalDamage() < 0.5) {
+                doDeath(target);
+                broadcastMessage("&e" + target.getName() + " &7was killed!");
             }
         }
     }
@@ -374,8 +392,15 @@ public class StickFight implements Game, Listener {
         Player player = e.getPlayer();
         ItemStack placed = e.getItemInHand();
         if(getPlayers().contains(player.getUniqueId())) {
+            Location spawn = spawnLocations.get(player.getUniqueId());
+            if(e.getBlock().getZ() >= spawn.getZ() + 6 || e.getBlock().getZ() <= spawn.getZ() - 6) {
+                e.setBuild(false);
+                e.setCancelled(true);
+                player.sendMessage(ChatUtil.clr("&cYou can't build this far out!"));
+            }
             if(e.getBlock().getY() > getDefaultY() + 9) {
                 e.setCancelled(true);
+                e.setBuild(false);
                 player.sendMessage(ChatUtil.clr("&cYou can't build this high!"));
             }
             Block b = e.getBlock();
@@ -383,6 +408,7 @@ public class StickFight implements Game, Listener {
                 int i = 0;
                 @Override
                 public void run() {
+                    if(!e.canBuild()) return;
                     if(!player.isOnline()) {
                         e.getBlock().setType(Material.AIR);
                         cancel();

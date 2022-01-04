@@ -18,8 +18,12 @@ public class StickFightKit extends Kit {
         // add contents....
         addContent(new ItemBuilder(Material.STICK).setDisplayName(ChatUtil.clr("&7Knockback Stick")).addEnchant(Enchantment.KNOCKBACK, 1).build(), 0);
         addContent(new ItemBuilder(Material.SHEARS).setDisplayName(ChatUtil.clr("&7Shears")).setUnbreakable(true).build(), 1);
-        addContent(new ItemBuilder(Material.WOOL, (byte) 5).setAmount(16).build(), 4);
-        addArmor(new ItemStack(Material.CHAINMAIL_CHESTPLATE));
+        addContent(new ItemBuilder(Material.WOOL).setAmount(16).build(), 4);
+        addArmor(new ItemStack(Material.LEATHER_BOOTS));
+        addArmor(new ItemStack(Material.LEATHER_LEGGINGS));
+        addArmor(new ItemStack(Material.LEATHER_CHESTPLATE));
+        addArmor(new ItemStack(Material.LEATHER_HELMET));
+
     }
 
 }

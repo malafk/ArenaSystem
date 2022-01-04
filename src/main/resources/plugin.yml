@@ -3,9 +3,12 @@ version: ${project.version}
 main: lol.maltest.arenasystem.ArenaSystem
 authors: [ maltest, TheRealDan, ggtylerr ]
 description: Arena system
-depend: ['WorldEdit']
+depend: ['WorldEdit', "TitleAPI"]
 commands:
   testpaste:
     description: Testing schematic stuff
   makevoid:
     description: make void
+  admin:
+    description: admin command
+    permission: ayrie.admin

@@ -112,8 +112,8 @@ public class GameManager {
         }
         ArrayList<String> teamWhoWon = new ArrayList<>();
         boolean noWinner = false;
-        Player whoWon;
-        if(Bukkit.getPlayer(getPlayersAlive(uuid).get(0)) == null) {
+        Player whoWon = null;
+        if(getPlayersAlive(uuid).size() == 0) {
             noWinner = true;
         } else {
             whoWon = Bukkit.getPlayer(getPlayersAlive(uuid).get(0));
@@ -124,6 +124,7 @@ public class GameManager {
             });
         }
         if(!noWinner) {
+            Player finalWhoWon = whoWon;
             new BukkitRunnable() {
                 int amountOfFireworks = 5;
                 @Override
@@ -133,7 +134,7 @@ public class GameManager {
                     int g = (int) (Math.random() * 256);
                     int b = (int) (Math.random() * 256);
 
-                    Location newLocation = whoWon.getLocation().add(new Vector(Math.random() - 0.5, 0, Math.random() - 0.5).multiply(5));
+                    Location newLocation = finalWhoWon.getLocation().add(new Vector(Math.random() - 0.5, 0, Math.random() - 0.5).multiply(5));
 
                     spawnFireworks(newLocation, 1, Color.fromRGB(r, g, b));
 
@@ -176,7 +177,7 @@ public class GameManager {
 //        } else {
 //
 //        }
-        game.broadcastMessage("&7The winning team is: " + (Objects.equals(whoWon.getScoreboard(), null) ? whoWon.getScoreboard().getPlayerTeam(whoWon).getDisplayName() : "No One"));
+        game.broadcastMessage("&7The winning team is: " + (Objects.equals(whoWon, null) ? "No One" : whoWon.getScoreboard().getPlayerTeam(whoWon).getDisplayName()));
         if(!noWinner) {
             if(teams) {
                 game.broadcastMessage("&7Winners: &e" + StringUtils.join(teamWhoWon, ", "));
@@ -187,22 +188,22 @@ public class GameManager {
         }
         game.broadcastMessage("&6");
         game.broadcastMessage("&7Kills:");
-        HashMap<UUID, Integer> result = getKillers(uuid).entrySet().stream().sorted(Map.Entry.comparingByValue()).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (oldValue, newValue) -> oldValue, LinkedHashMap::new));
-        int i = 1;
-        System.out.println("unsorted killers: " + getKillers(uuid).size());
-        System.out.println("sorted killers: " + result.size());
-        for (Map.Entry<UUID, Integer> entry : result.entrySet()) {
-            UUID key = entry.getKey();
-            Integer kills = entry.getValue();
+        LinkedHashMap<UUID, Integer> result = getKillers(uuid).entrySet().stream().sorted(Map.Entry.comparingByValue()).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (oldValue, newValue) -> oldValue, LinkedHashMap::new));;
+        int i = 0;
+        List<UUID> keyList = new ArrayList<UUID>(result.keySet());
+        Collections.reverse(keyList);
+        for (UUID k : keyList) {
+            UUID key = k;
+            Integer kills = result.get(key);
             Player player = Bukkit.getPlayer(key);
-            if(i == 3) {
-                game.broadcastMessage("&c1st &7 - " + player.getName() + "- " + kills);
-            }
-            if(i == 2) {
-                game.broadcastMessage("&62nd &7 - " + player.getName() + "- " + kills);
+            if(i == 0) {
+                game.broadcastMessage("&c1st &7 - " + player.getName() + " - " + kills);
             }
             if(i == 1) {
-                game.broadcastMessage("&e3rd &7 - " + player.getName() + "- " + kills);
+                game.broadcastMessage("&62nd &7 - " + player.getName() + " - " + kills);
+            }
+            if(i == 2) {
+                game.broadcastMessage("&e3rd &7 - " + player.getName() + " - " + kills);
             }
             if(i == result.size()) {
                 break;
@@ -228,12 +229,20 @@ public class GameManager {
         }.runTaskLater(plugin, 20 * 8);
     }
 
+    public void removePlayerFromGame(GamePlayer player) {
+        playerGame.remove(player);
+    }
+
+    public Game getGame(UUID uuid) {
+        return activeGames.get(uuid);
+    }
+
     public void spawnFireworks(Location location, int amount, Color color){
         Location loc = location;
         Firework fw = (Firework) loc.getWorld().spawnEntity(loc, EntityType.FIREWORK);
         FireworkMeta fwm = fw.getFireworkMeta();
 
-        fwm.setPower(2);
+        fwm.setPower(1);
         fwm.addEffect(FireworkEffect.builder().withColor(color).flicker(true).build());
 
         fw.setFireworkMeta(fwm);
@@ -259,14 +268,14 @@ public class GameManager {
         Game game = activeGames.getOrDefault(gameUuid, null);
         for(JScoreboardTeam team : game.getScoreboard().getScoreboard().getTeams()) {
             for(UUID p : team.getEntities()) {
-                Player pl = Bukkit.getPlayer(p);
-                if(getPlayerObject(p).getLives() > 0) {
-                    aliveTeams.add(team);
-                    break;
+                if(getPlayerObject(p) != null) {
+                    if(getPlayerObject(p).getLives() > 0) {
+                        aliveTeams.add(team);
+                        break;
+                    }
                 }
             }
         }
-
         return aliveTeams;
     }
 

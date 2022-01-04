@@ -24,12 +24,12 @@ public class ArenaScoreboard {
 
     private List<String> lines = new ArrayList<>();
 
-    public ArenaScoreboard(GameManager gameManager) {
+    public ArenaScoreboard(GameManager gameManager, String title) {
         this.gameManager = gameManager;
         scoreboard = new JGlobalMethodBasedScoreboard();
         scoreboard.setOptions(new JScoreboardOptions(JScoreboardTabHealthStyle.NONE, true));
         System.out.println("create scoreboard called.");
-        scoreboard.setTitle("&e&lArena System");
+        scoreboard.setTitle("&e&l" + title);
     }
 
     public void waitingScoreboard(UUID gameUuid) {
@@ -43,7 +43,6 @@ public class ArenaScoreboard {
         gameManager.getPlayers(gameUuid).forEach(player -> {
             Player p = Bukkit.getPlayer(player);
             scoreboard.addPlayer(p);
-            System.out.println("added " + p.getName() + " to scoreboard");
             int team = 0;
             List<JScoreboardTeam> teams = scoreboard.getTeams();
             if (teams.size() == 0) {
@@ -67,20 +66,16 @@ public class ArenaScoreboard {
         lines.add("&f&lPlayers:");
         for(UUID pUuid : gameManager.getPlayers(gameUuid)) {
             Player loopedPlayer = Bukkit.getPlayer(pUuid);
-            System.out.println("scoreboaqrd loop " + loopedPlayer.getName());
             for(JScoreboardTeam team : scoreboard.getTeams()) {
                 if(team.isOnTeam(pUuid)) {
-                    System.out.println("lives: " + gameManager.getPlayerObject(loopedPlayer.getUniqueId()).getLives());
-                    lines.add(team.getDisplayName() + " &7" + loopedPlayer.getName() + "&f: " + gameManager.getPlayerObject(loopedPlayer.getUniqueId()).getLives());
+                    if(gameManager.getPlayerObject(loopedPlayer.getUniqueId()).getLives() > 0) {
+                        lines.add(team.getDisplayName() + " &7" + loopedPlayer.getName() + "&f: " + gameManager.getPlayerObject(loopedPlayer.getUniqueId()).getLives());
+                    }
                 }
             }
         }
         lines.add("&7&m-------------------");
-        System.out.println("lines size: " + lines.size());
-        System.out.println("updating scoreboard....");
-        lines.forEach(System.out::println);
         scoreboard.setLines(lines);
-//        scoreboard.setLines(Arrays.asList(lines));
     }
 
     public JGlobalMethodBasedScoreboard getScoreboard() {

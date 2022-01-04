@@ -5,6 +5,7 @@ import com.comphenix.protocol.ProtocolManager;
 import com.sk89q.worldedit.EditSession;
 import lol.maltest.arenasystem.arena.ArenaInstance;
 import lol.maltest.arenasystem.arena.ArenaManager;
+import lol.maltest.arenasystem.commands.AdminCMD;
 import lol.maltest.arenasystem.commands.MakeVoid;
 import lol.maltest.arenasystem.commands.PasteSchematic;
 import lol.maltest.arenasystem.commands.TestPaste;
@@ -18,8 +19,6 @@ public final class ArenaSystem extends JavaPlugin {
 
     private ArenaSystem plugin;
     private GameManager gameManager;
-
-    private HashMap<EditSession, ArenaInstance> games = new HashMap<>();
 
     ProtocolManager manager;
 
@@ -36,10 +35,11 @@ public final class ArenaSystem extends JavaPlugin {
         config.options().copyDefaults(true);
         saveDefaultConfig();
 
-        getServer().getPluginManager().registerEvents(new MainListener(), this);
+        getServer().getPluginManager().registerEvents(new MainListener(this), this);
 
         getCommand("testpaste").setExecutor(new TestPaste(this));
         getCommand("makevoid").setExecutor(new MakeVoid());
+        getCommand("admin").setExecutor(new AdminCMD(this));
     }
 
     @Override
@@ -47,9 +47,6 @@ public final class ArenaSystem extends JavaPlugin {
         // Plugin shutdown logic
     }
 
-    public HashMap<EditSession, ArenaInstance> getGames() {
-        return games;
-    }
 
     public GameManager gameManager() {
         return gameManager;
