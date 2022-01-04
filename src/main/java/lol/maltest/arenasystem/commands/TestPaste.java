@@ -41,7 +41,7 @@ public class TestPaste implements CommandExecutor {
             Player player = (Player) sender;
 
             UUID uuid = UUID.randomUUID();
-            TestGame game = new TestGame(main.gameManager(), uuid);
+            StickFight game = new StickFight(main.gameManager(), uuid);
             main.gameManager().addGame(uuid, game);
             if(args.length > 0) {
                 if(args[0].equals("all")) {
