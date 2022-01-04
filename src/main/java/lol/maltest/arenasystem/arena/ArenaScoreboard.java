@@ -22,7 +22,7 @@ public class ArenaScoreboard {
 
     private JGlobalMethodBasedScoreboard scoreboard;
 
-    private ArrayList<String> lines = new ArrayList<>();
+    private List<String> lines = new ArrayList<>();
 
     public ArenaScoreboard(GameManager gameManager) {
         this.gameManager = gameManager;
@@ -61,10 +61,13 @@ public class ArenaScoreboard {
     }
 
 
-    public void updateLives(UUID gameUuid) {
+    public void updateLives(UUID gameUuid, boolean test) {
         lines.clear();
         lines.add("&7&m-------------------");
         lines.add("&f&lPlayers:");
+        if(test) {
+            lines.add("o");
+        }
             for(UUID pUuid : gameManager.getPlayers(gameUuid)) {
                 Player loopedPlayer = Bukkit.getPlayer(pUuid);
                 System.out.println("scoreboaqrd loop " + loopedPlayer.getName());
@@ -76,6 +79,28 @@ public class ArenaScoreboard {
                 }
             }
             lines.add("&7&m-------------------");
+        System.out.println("lines size: " + lines.size());
+        System.out.println("updating scoreboard....");
+        lines.forEach(System.out::println);
+        scoreboard.setLines(lines);
+//        scoreboard.setLines(Arrays.asList(lines));
+    }
+
+    public void updateLives(UUID gameUuid) {
+        lines.clear();
+        lines.add("&7&m-------------------");
+        lines.add("&f&lPlayers:");
+        for(UUID pUuid : gameManager.getPlayers(gameUuid)) {
+            Player loopedPlayer = Bukkit.getPlayer(pUuid);
+            System.out.println("scoreboaqrd loop " + loopedPlayer.getName());
+            for(JScoreboardTeam team : scoreboard.getTeams()) {
+                if(team.isOnTeam(pUuid)) {
+                    System.out.println("lives: " + gameManager.getPlayerObject(loopedPlayer.getUniqueId()).getLives());
+                    lines.add(team.getDisplayName() + " &7" + loopedPlayer.getName() + "&f: " + gameManager.getPlayerObject(loopedPlayer.getUniqueId()).getLives());
+                }
+            }
+        }
+        lines.add("&7&m-------------------");
         System.out.println("lines size: " + lines.size());
         System.out.println("updating scoreboard....");
         lines.forEach(System.out::println);

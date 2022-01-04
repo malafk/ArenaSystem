@@ -115,32 +115,65 @@ public class GameManager {
         getTeamsAlive(uuid).get(0).getEntities().forEach(p -> {
             teamWhoWon.add(Bukkit.getPlayer(p).getName());
         });
+        boolean noWinner = false;
         Player whoWon = Bukkit.getPlayer(getPlayersAlive(uuid).get(0));
-        new BukkitRunnable() {
-            int amountOfFireworks = 5;
-            @Override
-            public void run() {
+        if(whoWon == null) {
+            noWinner = true;
+        }
+        if(!noWinner) {
+            new BukkitRunnable() {
+                int amountOfFireworks = 5;
+                @Override
+                public void run() {
 
-                int r = (int) (Math.random() * 256);
-                int g = (int) (Math.random() * 256);
-                int b = (int) (Math.random() * 256);
+                    int r = (int) (Math.random() * 256);
+                    int g = (int) (Math.random() * 256);
+                    int b = (int) (Math.random() * 256);
 
-                Location newLocation = whoWon.getLocation().add(new Vector(Math.random() - 0.5, 0, Math.random() - 0.5).multiply(5));
+                    Location newLocation = whoWon.getLocation().add(new Vector(Math.random() - 0.5, 0, Math.random() - 0.5).multiply(5));
 
-                spawnFireworks(newLocation, 1, Color.fromRGB(r, g, b));
+                    spawnFireworks(newLocation, 1, Color.fromRGB(r, g, b));
 
-                amountOfFireworks--;
-                if(amountOfFireworks == 0) {
-                    cancel();
+                    amountOfFireworks--;
+                    if(amountOfFireworks == 0) {
+                        cancel();
+                    }
                 }
-            }
-        }.runTaskTimer(plugin, 0, 20);
+            }.runTaskTimer(plugin, 0, 20);
+        }
         game.broadcastMessage("&7" + uuid);
         game.broadcastMessage("&7&m--------------------------");
         game.broadcastMessage("&6");
         game.broadcastMessage("&e&lGame Ended!");
         game.broadcastMessage("");
-        game.broadcastMessage("&7The winning team is: " + whoWon.getScoreboard().getPlayerTeam(whoWon).getName());
+//        if(noWinner) {
+//            game.broadcastMessage("&7The winner is: No one!");
+//            game.broadcastMessage("&6");
+//            game.broadcastMessage("&7Kills:");
+//            HashMap<UUID, Integer> result = getKillers(uuid).entrySet().stream().sorted(Map.Entry.comparingByValue()).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (oldValue, newValue) -> oldValue, LinkedHashMap::new));
+//            int i = 1;
+//            for (Map.Entry<UUID, Integer> entry : result.entrySet()) {
+//                UUID key = entry.getKey();
+//                Integer kills = entry.getValue();
+//                Player player = Bukkit.getPlayer(key);
+//                if(i == result.size()) {
+//                    break;
+//                }
+//                if(i == 3) {
+//                    game.broadcastMessage("&c1st &7 - " + player.getName() + "- " + kills);
+//                }
+//                if(i == 2) {
+//                    game.broadcastMessage("&62nd &7 - " + player.getName() + "- " + kills);
+//                }
+//                if(i == 1) {
+//                    game.broadcastMessage("&e3rd &7 - " + player.getName() + "- " + kills);
+//                }
+//                i++;
+//            }
+//        } else {
+//
+//        }
+        game.broadcastMessage("&7The winning team is: " + (Objects.equals(whoWon.getScoreboard(), null) ? whoWon.getScoreboard().getPlayerTeam(whoWon).getDisplayName() : "No One"));
         if(teams) {
             game.broadcastMessage("&7Winners: &e" + StringUtils.join(teamWhoWon, ", "));
         } else {
@@ -178,6 +211,7 @@ public class GameManager {
             public void run() {
                 getPlayers(uuid).forEach(p -> {
                     Player player = Bukkit.getPlayer(p);
+                    player.getInventory().clear();
                     player.setGameMode(GameMode.SURVIVAL);
                     player.teleport(new Location(arenaManager.getWorld(), 0, 5,0));
                     // TODO: bungee send to hub

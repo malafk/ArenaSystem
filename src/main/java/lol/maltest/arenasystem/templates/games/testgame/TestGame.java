@@ -198,10 +198,10 @@ public class TestGame implements Game, Listener {
             player.setFoodLevel(20);
             player.closeInventory();
             player.getInventory().clear();
-            arenaScoreboard.updateLives(uuid);
+            arenaScoreboard.updateLives(uuid, true);
             if(gameManager.getPlayers(uuid).size() > 2) {
                 if(gameManager.getPlayersAlive(uuid).size() <= 2) {
-                    if(gameManager.getTeamsAlive(uuid).size() == 1) {
+                    if(gameManager.getTeamsAlive(uuid).size() <= 1) {
                         setGameState(GameState.WON);
                         gameManager.endGame(uuid, true);
                         return;
@@ -396,6 +396,7 @@ public class TestGame implements Game, Listener {
                         minePacket.getBlockPositionModifier().write(0, blockPosition);
                         minePacket.getIntegers().write(1, i);
                         try {
+                            if(!player1.isOnline()) break;
                             gameManager.getPlugin().getManager().sendServerPacket(player1, minePacket);
                         } catch (InvocationTargetException ex) {
                             ex.printStackTrace();
