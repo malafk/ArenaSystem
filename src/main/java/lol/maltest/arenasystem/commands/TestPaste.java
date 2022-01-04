@@ -51,6 +51,12 @@ public class TestPaste implements CommandExecutor {
 //                    main.gameManager().addPlayerToGame(uuid, player, game.getDefaultLives(), false);
                     return false;
                 }
+                if(args[0].equals("force")) {
+                    main.gameManager().addPlayerToGame(uuid, player, game.getDefaultLives(), false);
+                    main.gameManager().startGame(uuid);
+                    player.sendMessage(ChatUtil.clr("&cForcefully made a game."));
+                    return false;
+                }
                 Player p = Bukkit.getPlayer(args[0]);
                 if(p == null) {
                     player.sendMessage(ChatUtil.clr("&c/testpaste [2ndplayer]"));

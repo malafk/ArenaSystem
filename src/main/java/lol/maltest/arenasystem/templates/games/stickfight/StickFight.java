@@ -198,7 +198,7 @@ public class StickFight implements Game, Listener {
             player.setFoodLevel(20);
             player.closeInventory();
             player.getInventory().clear();
-            arenaScoreboard.updateLives(uuid, true);
+            arenaScoreboard.updateLives(uuid);
             if(gameManager.getPlayers(uuid).size() > 2) {
                 if(gameManager.getPlayersAlive(uuid).size() <= 2) {
                     if(gameManager.getTeamsAlive(uuid).size() <= 1) {

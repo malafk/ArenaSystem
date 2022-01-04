@@ -51,7 +51,8 @@ public class Map {
     public List<Location> getSpawnpoints(Location origin) {
         List<Location> spawnpoints = new ArrayList<>();
         for (Location relative : this.spawnpoints)
-            spawnpoints.add(origin.clone().add(relative.getX(), relative.getY(), relative.getZ()));
+            spawnpoints.add(relative.clone().add(origin.getX(), origin.getY(), origin.getZ()));
+//            spawnpoints.add(origin.clone().add(relative.getX(), relative.getY(), relative.getZ()));
         return spawnpoints;
     }
 }

@@ -111,14 +111,17 @@ public class GameManager {
             return;
         }
         ArrayList<String> teamWhoWon = new ArrayList<>();
-
-        getTeamsAlive(uuid).get(0).getEntities().forEach(p -> {
-            teamWhoWon.add(Bukkit.getPlayer(p).getName());
-        });
         boolean noWinner = false;
-        Player whoWon = Bukkit.getPlayer(getPlayersAlive(uuid).get(0));
-        if(whoWon == null) {
+        Player whoWon;
+        if(Bukkit.getPlayer(getPlayersAlive(uuid).get(0)) == null) {
             noWinner = true;
+        } else {
+            whoWon = Bukkit.getPlayer(getPlayersAlive(uuid).get(0));
+        }
+        if(!noWinner) {
+            getTeamsAlive(uuid).get(0).getEntities().forEach(p -> {
+                teamWhoWon.add(Bukkit.getPlayer(p).getName());
+            });
         }
         if(!noWinner) {
             new BukkitRunnable() {
@@ -174,11 +177,13 @@ public class GameManager {
 //
 //        }
         game.broadcastMessage("&7The winning team is: " + (Objects.equals(whoWon.getScoreboard(), null) ? whoWon.getScoreboard().getPlayerTeam(whoWon).getDisplayName() : "No One"));
-        if(teams) {
-            game.broadcastMessage("&7Winners: &e" + StringUtils.join(teamWhoWon, ", "));
-        } else {
-            game.broadcastMessage("&7Winners: &e" + whoWon.getName());
+        if(!noWinner) {
+            if(teams) {
+                game.broadcastMessage("&7Winners: &e" + StringUtils.join(teamWhoWon, ", "));
+            } else {
+                game.broadcastMessage("&7Winners: &e" + whoWon.getName());
 
+            }
         }
         game.broadcastMessage("&6");
         game.broadcastMessage("&7Kills:");
