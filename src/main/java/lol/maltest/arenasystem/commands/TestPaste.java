@@ -1,30 +1,15 @@
 package lol.maltest.arenasystem.commands;
 
-import com.boydti.fawe.object.schematic.Schematic;
-import com.sk89q.worldedit.EditSession;
-import com.sk89q.worldedit.bukkit.BukkitUtil;
-import com.sk89q.worldedit.extent.clipboard.ClipboardFormats;
-import com.sk89q.worldedit.extent.clipboard.io.ClipboardFormat;
-import com.sk89q.worldedit.math.transform.AffineTransform;
 import lol.maltest.arenasystem.ArenaSystem;
-import lol.maltest.arenasystem.arena.ArenaInstance;
-import lol.maltest.arenasystem.arena.GameType;
 import lol.maltest.arenasystem.templates.games.stickfight.StickFight;
-import lol.maltest.arenasystem.templates.games.testgame.TestGame;
 import lol.maltest.arenasystem.util.ChatUtil;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
-import org.bukkit.Location;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
-import org.bukkit.scheduler.BukkitRunnable;
-import org.junit.rules.TestName;
 
-import java.awt.datatransfer.Clipboard;
-import java.io.File;
-import java.io.IOException;
 import java.util.*;
 
 public class TestPaste implements CommandExecutor {

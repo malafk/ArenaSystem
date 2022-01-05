@@ -1,4 +1,4 @@
-name: ArenaSystem
+name: AyrieGame
 version: ${project.version}
 main: lol.maltest.arenasystem.ArenaSystem
 authors: [ maltest, TheRealDan, ggtylerr ]
