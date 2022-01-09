@@ -30,7 +30,10 @@ public class TestPaste implements CommandExecutor {
             main.gameManager().addGame(uuid, game);
             if(args.length > 0) {
                 if(args[0].equals("all")) {
-                    ArrayList<Player> players = new ArrayList<>(Bukkit.getOnlinePlayers());
+                    ArrayList<String> players = new ArrayList<>();
+                    Bukkit.getOnlinePlayers().forEach(p -> {
+                        players.add(String.valueOf(p.getUniqueId()));
+                    });
                     main.gameManager().addPlayerToGame(uuid, players, game.getDefaultLives(), false);
 
 //                    main.gameManager().addPlayerToGame(uuid, player, game.getDefaultLives(), false);

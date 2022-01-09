@@ -17,6 +17,7 @@ import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.StringUtil;
 import org.bukkit.util.Vector;
 
+import java.io.BufferedReader;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -69,7 +70,7 @@ public class GameManager {
         }
     }
 
-    public void addPlayerToGame(UUID gameUuid, ArrayList<Player> player, int lives, boolean spectator) {
+    public void addPlayerToGame(UUID gameUuid, ArrayList<String> player, int lives, boolean spectator) {
         Game game = activeGames.getOrDefault(gameUuid, null);
 
         if (game == null) {
@@ -78,9 +79,10 @@ public class GameManager {
 
 
         player.forEach(p -> {
-            System.out.println(p.getName() + " got added to a game");
-            playerGame.put(new GamePlayer(p.getUniqueId(), gameUuid, lives), gameUuid);
-            game.someoneJoined(p, spectator);
+            Player finalPlayer = Bukkit.getPlayer(p);
+            System.out.println(finalPlayer.getName() + " got added to a game");
+            playerGame.put(new GamePlayer(finalPlayer.getUniqueId(), gameUuid, lives), gameUuid);
+            game.someoneJoined(finalPlayer, spectator);
         });
 
         if(spectator) return;
