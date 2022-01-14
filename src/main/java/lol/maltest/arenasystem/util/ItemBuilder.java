@@ -61,6 +61,11 @@ public class ItemBuilder {
         return this;
     }
 
+    public ItemBuilder setDurability(int durability) {
+        stack.setDurability((short) durability);
+        return this;
+    }
+
     public ItemBuilder setBannerColor (DyeColor color) {
         BannerMeta meta = (BannerMeta) stack.getItemMeta();
         meta.setBaseColor(color);

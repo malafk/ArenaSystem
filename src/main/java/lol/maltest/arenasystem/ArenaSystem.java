@@ -32,16 +32,19 @@ public final class ArenaSystem extends JavaPlugin {
     public JedisPool pool;
     public RedisManager redisManager;
     ProtocolManager manager;
+    private boolean j = false;
 
     @Override
     public void onEnable() {
         // Plugin startup logic
         plugin = this;
 
-        this.redisManager = new RedisManager(this);
-        pool = new JedisPool("127.0.0.1", 6379);
-        System.out.println("connected to redis!");
-        redisManager.subscribe();
+        if(j) {
+            this.redisManager = new RedisManager(this);
+            pool = new JedisPool("127.0.0.1", 6379);
+            System.out.println("connected to redis!");
+            redisManager.subscribe();
+        }
 
         this.gameManager = new GameManager(this);
 
@@ -57,24 +60,28 @@ public final class ArenaSystem extends JavaPlugin {
         getCommand("makevoid").setExecutor(new MakeVoid());
         getCommand("admin").setExecutor(new AdminCMD(this));
 
-        System.out.println("registering game with proxy");
-        String json = new RedisMessage(MessageAction.ADD_SERVER)
-                .setParam("server", "game")
-                .setParam("port", String.valueOf(getServer().getPort()))
-                .toJSON();
-        plugin.pool.getResource().publish("ayrie:servers", json);
+        if(j) {
+            System.out.println("registering game with proxy");
+            String json = new RedisMessage(MessageAction.ADD_SERVER)
+                    .setParam("server", "game")
+                    .setParam("port", String.valueOf(getServer().getPort()))
+                    .toJSON();
+            plugin.pool.getResource().publish("ayrie:servers", json);
+        }
     }
 
     @Override
     public void onDisable() {
-        System.out.println("Sending shutting down redis message");
-        String json = new RedisMessage(MessageAction.REMOVE_SERVER)
-                .setParam("server", "game")
-                .setParam("port", String.valueOf(getServer().getPort()))
-                .toJSON();
-        plugin.pool.getResource().publish("ayrie:servers", json);
-        System.out.println("done");
-        pool.close();
+        if(j) {
+            System.out.println("Sending shutting down redis message");
+            String json = new RedisMessage(MessageAction.REMOVE_SERVER)
+                    .setParam("server", "game")
+                    .setParam("port", String.valueOf(getServer().getPort()))
+                    .toJSON();
+            plugin.pool.getResource().publish("ayrie:servers", json);
+            System.out.println("done");
+            pool.close();
+        }
         // Plugin shutdown logic
     }
 

@@ -1,6 +1,10 @@
 package lol.maltest.arenasystem.commands;
 
+import com.mojang.authlib.GameProfile;
 import lol.maltest.arenasystem.ArenaSystem;
+import lol.maltest.arenasystem.templates.Game;
+import lol.maltest.arenasystem.templates.games.pvpbrawl.PvPBrawl;
+import lol.maltest.arenasystem.templates.games.spleef.Spleef;
 import lol.maltest.arenasystem.templates.games.stickfight.StickFight;
 import lol.maltest.arenasystem.util.ChatUtil;
 import org.bukkit.Bukkit;
@@ -26,17 +30,17 @@ public class TestPaste implements CommandExecutor {
             Player player = (Player) sender;
 
             UUID uuid = UUID.randomUUID();
-            StickFight game = new StickFight(main.gameManager(), uuid);
+            Game game = new Spleef(main.gameManager(), uuid);
             main.gameManager().addGame(uuid, game);
             if(args.length > 0) {
                 if(args[0].equals("all")) {
                     ArrayList<String> players = new ArrayList<>();
-                    Bukkit.getOnlinePlayers().forEach(p -> {
-                        players.add(String.valueOf(p.getUniqueId()));
-                    });
+                    for(Player player1 : Bukkit.getOnlinePlayers()) {
+                        if(!player1.isDead()) {
+                            players.add(player1.getName());
+                        }
+                    }
                     main.gameManager().addPlayerToGame(uuid, players, game.getDefaultLives(), false);
-
-//                    main.gameManager().addPlayerToGame(uuid, player, game.getDefaultLives(), false);
                     return false;
                 }
                 if(args[0].equals("force")) {

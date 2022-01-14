@@ -12,6 +12,7 @@ import org.bukkit.*;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Firework;
 import org.bukkit.entity.Player;
+import org.bukkit.event.HandlerList;
 import org.bukkit.inventory.meta.FireworkMeta;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.StringUtil;
@@ -45,7 +46,7 @@ public class GameManager {
         // ask the game what schematic it needs us to paste
 
         // create an arena for the game
-        ArenaInstance arena = new ArenaInstance(this, mapSettings.stickFightMaps.get(0).getSchematicName());
+        ArenaInstance arena = new ArenaInstance(this);
         game.setArena(arena);
         activeGames.put(gameUuid, game);
     }
@@ -65,7 +66,7 @@ public class GameManager {
         if(spectator) return;
 
         if (getPlayers(gameUuid).size() >= game.getMaxPlayers()) {
-            // game is full! we should start it
+            System.out.println("player size: " + getPlayers(gameUuid).size());
             startGame(gameUuid);
         }
     }
@@ -220,6 +221,10 @@ public class GameManager {
                 getPlayers(uuid).forEach(p -> {
                     Player player = Bukkit.getPlayer(p);
                     player.getInventory().clear();
+                    player.getInventory().setHelmet(null);
+                    player.getInventory().setChestplate(null);
+                    player.getInventory().setLeggings(null);
+                    player.getInventory().setBoots(null);
                     player.setGameMode(GameMode.SURVIVAL);
                     player.teleport(new Location(arenaManager.getWorld(), 0, 5,0));
                     // TODO: bungee send to hub

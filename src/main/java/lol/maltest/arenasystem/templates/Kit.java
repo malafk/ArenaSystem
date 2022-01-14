@@ -14,7 +14,7 @@ import java.util.Map;
 
 public class Kit {
 
-    public HashMap<ItemStack, Integer> contents = new HashMap<>();
+    public HashMap<Integer, ItemStack> contents = new HashMap<>();
     public ArrayList<ItemStack> armor = new ArrayList<>();
 
     public void giveKit(Player player) {
@@ -24,22 +24,29 @@ public class Kit {
         player.closeInventory();
         player.getInventory().clear();
         player.getActivePotionEffects().clear();
-        for (Map.Entry<ItemStack, Integer> entry : contents.entrySet()) {
-            ItemStack key = entry.getKey();
-            Integer value = entry.getValue();
-            if(key.getType().equals(Material.WOOL)) {
-                ItemStack keyCloned = key.clone();
-                if(player.getScoreboard().getPlayerTeam(player).getName().equals("&c&lRed")) {
-                    setArmorColor(Color.RED);
-                    keyCloned.setDurability((short)14);
-                    player.getInventory().setItem(value, keyCloned);
-                } else {
-                    setArmorColor(Color.BLUE);
-                    keyCloned.setDurability((short)3);
-                    player.getInventory().setItem(value, keyCloned);
-                }
+        for (Map.Entry<Integer, ItemStack> entry : contents.entrySet()) {
+            Integer key = entry.getKey();
+            ItemStack value = entry.getValue();
+            System.out.println(player.getScoreboard().getPlayerTeam(player).getName());
+            if (player.getScoreboard().getPlayerTeam(player).getName().equals("&c&lRed")) {
+                setArmorColor(Color.RED);
             } else {
-                player.getInventory().setItem(value, key);
+                setArmorColor(Color.BLUE);
+            }
+            if (key >= 10000) {
+                player.getInventory().addItem(value);
+            } else {
+                player.getInventory().setItem(key, value);
+            }
+            if (value.getType().equals(Material.WOOL)) {
+                ItemStack keyCloned = value.clone();
+                if (player.getScoreboard().getPlayerTeam(player).getName().equals("&c&lRed")) {
+                    keyCloned.setDurability((short) 14);
+                    player.getInventory().setItem(key, keyCloned);
+                } else {
+                    keyCloned.setDurability((short) 3);
+                    player.getInventory().setItem(key, keyCloned);
+                }
             }
         }
         // armor
@@ -63,8 +70,13 @@ public class Kit {
     }
 
     public void addContent(ItemStack item, Integer slot) {
-        System.out.println(item.getType().toString() + " " + slot);
-        contents.put(item, slot);
+        contents.put(slot, item);
+    }
+
+    int i = 1;
+    public void addContent(ItemStack item) {
+        contents.put(10000 + i, item);
+        i++;
     }
 
     public void addArmor(ItemStack item) {
@@ -73,9 +85,11 @@ public class Kit {
 
     public void setArmorColor(Color color) {
         for(ItemStack item : armor) {
-            LeatherArmorMeta meta = (LeatherArmorMeta) item.getItemMeta();
-            meta.setColor(color);
-            item.setItemMeta(meta);
+            if (item.getType().toString().contains("LEATHER")) {
+                LeatherArmorMeta meta = (LeatherArmorMeta) item.getItemMeta();
+                meta.setColor(color);
+                item.setItemMeta(meta);
+            }
         }
     }
 }

@@ -40,6 +40,7 @@ public class ArenaScoreboard {
     }
 
     public void addPlayersToScoreboard(UUID gameUuid) {
+        System.out.println("adding players to teams");
         gameManager.getPlayers(gameUuid).forEach(player -> {
             Player p = Bukkit.getPlayer(player);
             scoreboard.addPlayer(p);

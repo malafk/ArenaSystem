@@ -15,6 +15,7 @@ import lol.maltest.arenasystem.templates.GameGame;
 import lol.maltest.arenasystem.templates.games.stickfight.StickFight;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
+import org.bukkit.scheduler.BukkitRunnable;
 
 import java.io.File;
 import java.io.IOException;
@@ -27,9 +28,8 @@ public class ArenaInstance {
     private String schemName;
     private boolean isFFA = true;
 
-    public ArenaInstance(GameManager gameManager, String schemName) {
+    public ArenaInstance(GameManager gameManager) {
         this.gameManager = gameManager;
-        this.schemName = schemName;
         this.location = gameManager.getArenaManager().register(gameManager.getPlugin(), this);
 //        checkFFA:
 //        for (String team : players.keySet()) {
@@ -40,11 +40,20 @@ public class ArenaInstance {
 //                }
 //            }
 //        }
-        pasteSchematic(schemName, location);
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                pasteSchematic(schemName, location);
+            }
+        }.runTaskLater(gameManager.getPlugin(), 5L);
     }
 
     public void deleteSchemArena() {
         // todo - unload chunks, send to lobby..
+    }
+
+    public void setSchemName(String name) {
+        this.schemName = name;
     }
 
     public String getSchemName() {

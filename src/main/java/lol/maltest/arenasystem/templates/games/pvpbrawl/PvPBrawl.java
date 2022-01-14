@@ -1,8 +1,5 @@
-package lol.maltest.arenasystem.templates.games.stickfight;
+package lol.maltest.arenasystem.templates.games.pvpbrawl;
 
-import com.comphenix.protocol.PacketType;
-import com.comphenix.protocol.events.PacketContainer;
-import com.comphenix.protocol.wrappers.BlockPosition;
 import com.connorlinfoot.titleapi.TitleAPI;
 import dev.jcsoftware.jscoreboards.JScoreboardTeam;
 import lol.maltest.arenasystem.GameManager;
@@ -10,13 +7,19 @@ import lol.maltest.arenasystem.arena.ArenaInstance;
 import lol.maltest.arenasystem.arena.ArenaScoreboard;
 import lol.maltest.arenasystem.map.Map;
 import lol.maltest.arenasystem.templates.Game;
-import lol.maltest.arenasystem.templates.GameGame;
 import lol.maltest.arenasystem.templates.GameplayFlags;
-import lol.maltest.arenasystem.templates.games.stickfight.kit.StickFightKit;
+import lol.maltest.arenasystem.templates.Kit;
+import lol.maltest.arenasystem.templates.games.pvpbrawl.kit.NoDebuffKit;
+import lol.maltest.arenasystem.templates.games.pvpbrawl.kit.OldKit;
+import lol.maltest.arenasystem.templates.games.pvpbrawl.kit.VanillaKit;
+import lol.maltest.arenasystem.templates.games.spleef.Spleef;
 import lol.maltest.arenasystem.util.ChatUtil;
 import lol.maltest.arenasystem.util.ItemBuilder;
-import org.bukkit.*;
-import org.bukkit.block.Block;
+import org.bukkit.Bukkit;
+import org.bukkit.GameMode;
+import org.bukkit.Location;
+import org.bukkit.Material;
+import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.HandlerList;
@@ -26,15 +29,17 @@ import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
+import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.potion.Potion;
+import org.bukkit.potion.PotionType;
 import org.bukkit.scheduler.BukkitRunnable;
-import org.bukkit.util.Vector;
+import org.bukkit.scheduler.BukkitTask;
 
-import java.lang.reflect.InvocationTargetException;
 import java.util.*;
 
-public class StickFight implements Game, Listener {
-
+public class PvPBrawl implements Game, Listener {
     public enum GameState {
 
         STARTING, ACTIVE, WON
@@ -48,15 +53,15 @@ public class StickFight implements Game, Listener {
     HashMap<UUID, Location> spawnLocations = new HashMap<>();
     HashMap<Location, Boolean> spawnLocationsStart = new HashMap<>();
 
-
-
     private HashMap<UUID, UUID> lastHitter = new HashMap<>();
-//    UUID lasthit;
-//    UUID whohit;
-    // playerHit, personHitting
 
+    private Kit kit;
 
-    private StickFightKit stickFightKit;
+    private ArrayList<Kit> kits = new ArrayList<>();
+
+    Kit noDebuff = new Kit();
+    Kit oldKit = new Kit();
+    Kit vanillaKit = new Kit();
 
     private GameManager gameManager;
     private ArenaInstance arenaInstance;
@@ -64,19 +69,24 @@ public class StickFight implements Game, Listener {
     private UUID uuid;
     GameplayFlags thisGameFlags = new GameplayFlags();
 
-    public StickFight(GameManager gameManager, UUID uuid) {
+    Random random;
+
+    Map map;
+
+    public PvPBrawl(GameManager gameManager, UUID uuid) {
+        random = new Random();
         this.gameManager = gameManager;
         this.uuid = uuid;
-        this.stickFightKit = new StickFightKit();
-        this.arenaScoreboard = new ArenaScoreboard(gameManager, "Stick Fight (TEST)");
+        kits.add(new NoDebuffKit());
+        kits.add(new OldKit());
+        kits.add(new VanillaKit());
+        kit = kits.get(random.nextInt(kits.size())); // IDK
+        this.arenaScoreboard = new ArenaScoreboard(gameManager, "PvP Brawl");
         Bukkit.getPluginManager().registerEvents(this, gameManager.getPlugin());
 
-        allowToPlace.add(Material.WOOL);
-        allowToBreak.add(Material.WOOL);
         thisGameFlags.blockBreakAllowed = allowToBreak;
-        thisGameFlags.blockPlaceAllowed = allowToPlace;
-        thisGameFlags.canBreakBlocks = true;
-        thisGameFlags.canPlaceBlocks = true;
+        thisGameFlags.canBreakBlocks = false;
+        thisGameFlags.canPlaceBlocks = false;
         thisGameFlags.canDamageTeamSelf = false;
         thisGameFlags.canPvP = true;
     }
@@ -84,13 +94,15 @@ public class StickFight implements Game, Listener {
     @Override
     public void setArena(ArenaInstance arena) {
         arenaInstance = arena;
+        map = gameManager.getMapSettings().pvpBrawlMaps.get(random.nextInt(gameManager.getMapSettings().pvpBrawlMaps.size()));
+        arenaInstance.setSchemName(map.getSchematicName());
     }
 
     @Override
     public void start() {
         gameState = GameState.ACTIVE;
-        System.out.println("start called");
         arenaScoreboard.addPlayersToScoreboard(uuid);
+        System.out.println("start called");
         arenaScoreboard.updateLives(uuid);
         teleportToSpawnLocations();
     }
@@ -104,21 +116,7 @@ public class StickFight implements Game, Listener {
 
     @Override
     public void teleportToSpawnLocations() {
-//        for(Map map : gameManager.getMapSettings().stickFightMaps) {
-//            if(map.getSchematicName().equals(getArenaSchematic())) {
-//                System.out.println("done added spawnlocs");
-//                map.getSpawnpoints(arenaInstance.getLocation()).forEach(loc -> spawnLocations.put(loc, false));
-//            }
-//        }
-//        gameManager.getMapSettings().stickFightMaps.forEach(loc -> {
-//            if(loc.getSchematicName().equals(arenaInstance.getSchemName())) {
-//                loc.getSpawnpoints(arenaInstance.getLocation()).forEach(location -> spawnLocations.put(location, false));
-//                System.out.println("added a spawnpoint");
-//                return;
-//            }
-//        });
-        Map stickFight = gameManager.getMapSettings().stickFightMaps.get(0);
-        stickFight.getSpawnpoints(arenaInstance.getLocation()).forEach(location -> {
+        map.getSpawnpoints(arenaInstance.getLocation()).forEach(location -> {
             spawnLocationsStart.put(location, false);
             System.out.println("added a spawn " + location);
         });
@@ -136,10 +134,9 @@ public class StickFight implements Game, Listener {
                         spawnLocations.put(player.getUniqueId(), loc);
                         spawnLocationsStart.replace(loc, true);
                         player.teleport(loc);
-                        System.out.println("teleported " + player + " to " + loc);
                         alreadyTeleported.add(pUuid);
                         player.setGameMode(GameMode.SURVIVAL);
-                        stickFightKit.giveKit(player);
+                        giveKit(player);
                     }
                 }
             }
@@ -157,32 +154,21 @@ public class StickFight implements Game, Listener {
                     Player player = Bukkit.getPlayer(p);
                     spawnLocations.put(player.getUniqueId(), loc);
                     player.teleport(loc);
-                    System.out.println("teleported " + player + " to " + loc);
                     alreadyTeleported.add(p);
                     player.setGameMode(GameMode.SURVIVAL);
-                    stickFightKit.giveKit(player);
+                    giveKit(player);
                 }
             }
             for (java.util.Map.Entry<Location, Boolean> entry : spawnLocationsStart.entrySet()) {
                 Location loc = entry.getKey();
             }
         }
-//        for(UUID pUuid : gameManager.getPlayers(uuid)) {
-//            for(Location loc : spawnLocations.keySet()) {
-//                for(Boolean used : spawnLocations.values()) {
-//                    if(!used) {
-//                        player.teleport(loc);
-//                        spawnLocations.replace(loc, true);
-//                    }
-//                }
-//            }
-//        }
     }
 
     @Override
     public void someoneJoined(Player player, boolean spectator) {
         if(!spectator) {
-            player.sendMessage(ChatUtil.clr("&7You have been put in to " + uuid));
+            player.sendMessage(ChatUtil.clr("&7You have been put in to &a" + uuid));
         }
     }
 
@@ -194,8 +180,6 @@ public class StickFight implements Game, Listener {
         if(gameManager.getPlayerObject(player.getUniqueId()).getLives() <= 0) {
             broadcastMessage("&e" + player.getName() + " &7has been eliminated!");
             TitleAPI.sendTitle(player, 15, 40, 15, ChatUtil.clr("&c&lELIMINATED!"), ChatUtil.clr("&7Better luck next time!"));
-//            TitleAPI titleDie = new TitleAPI(ChatUtil.clr("&C&lELIMINATED"));
-//            titleDie.sendToPlayer(player);
             player.teleport(arenaInstance.getLocation());
             player.setGameMode(GameMode.SPECTATOR);
             player.setAllowFlight(true);
@@ -210,7 +194,6 @@ public class StickFight implements Game, Listener {
         broadcastMessage("&e" + player.getName() + " &7has &e" +  gameManager.getPlayerObject(player.getUniqueId()).getLives() + " &7lives left.");
         player.teleport(arenaInstance.getLocation());
         player.setGameMode(GameMode.SPECTATOR);
-//        player.addPotionEffect(new PotionEffect(PotionEffectType.INVISIBILITY, 1000000, 10));
         player.setAllowFlight(true);
         player.setFlying(true);
         player.setHealth(20);
@@ -223,9 +206,6 @@ public class StickFight implements Game, Listener {
             public void run() {
                 if(seconds != 0) {
                     TitleAPI.sendTitle(player, 5, 30, 0, ChatUtil.clr("&c&lYOU DIED!"), ChatUtil.clr("&7You will respawn in &c" + seconds + " &7seconds!"));
-//                    TitleAPI titleDie = new TitleAPI(ChatUtil.clr("&e&lYOU DIED!"));
-//                    titleDie.SubTitle(ChatUtil.clr("&7You will respawn in &c" + seconds + " &7seconds!"));
-//                    titleDie.sendToPlayer(player);
                 }
                 if(seconds == 0) {
                     TitleAPI.sendTitle(player, 15, 30, 15, ChatUtil.clr("&e&lRESPAWNED!"), "");
@@ -235,18 +215,15 @@ public class StickFight implements Game, Listener {
                 seconds--;
             }
         }.runTaskTimer(gameManager.getPlugin(), 0, 20l);
-        lastHitter.remove(player.getUniqueId());
-
     }
 
     @Override
     public void doRespawn(Player player) {
-//        player.removePotionEffect(PotionEffectType.INVISIBILITY);
         player.setFlying(false);
         player.setGameMode(GameMode.SURVIVAL);
-        stickFightKit.giveKit(player);
         player.teleport(spawnLocations.get(player.getUniqueId()));
         player.setAllowFlight(false);
+        giveKit(player);
     }
 
     @Override
@@ -259,6 +236,7 @@ public class StickFight implements Game, Listener {
 
     @Override
     public void tryEnd() {
+        if(gameState != GameState.ACTIVE) return;
         if(gameManager.getPlayers(uuid).size() >= 2) {
             if(gameManager.getPlayersAlive(uuid).size() >= 2) {
                 if(gameManager.getTeamsAlive(uuid).size() <= 1) {
@@ -297,7 +275,7 @@ public class StickFight implements Game, Listener {
 
     @Override
     public int getDefaultLives() {
-        return 5;
+        return 1;
     }
 
     @Override
@@ -313,25 +291,29 @@ public class StickFight implements Game, Listener {
         return (int) gameManager.getArenaManager().arenaYHeight;
     }
 
+    public void setGameState(GameState gameState) {
+        this.gameState = gameState;
+    }
+
+    public void giveKit(Player player) {
+        kit.giveKit(player);
+    }
 
     @EventHandler
     public void onDamage(EntityDamageByEntityEvent e) {
-        if(gameState != GameState.ACTIVE) return;
+        if(gameState != GameState.ACTIVE) {
+            e.setCancelled(true);
+            return;
+        }
+        if(!getGameplayFlags().canPvP) e.setCancelled(true);
         if(e.getDamager() instanceof Player && e.getEntity() instanceof Player) {
             Player damager = (Player) e.getDamager();
             Player target = (Player) e.getEntity();
+            if(damager.getScoreboard() == null) e.setCancelled(true);
             if(damager.getScoreboard().getPlayerTeam(damager).getEntries().contains(target.getName())) {
                 damager.sendMessage(ChatUtil.clr("&cFriendly fire is disabled."));
                 e.setCancelled(true);
                 return;
-            }
-            lastHitter.put(target.getUniqueId(), damager.getUniqueId());
-//            lasthit = target.getUniqueId();
-//            whohit = damager.getUniqueId();
-            if(target.getHealth() - e.getFinalDamage() < 0.5) {
-                doDeath(target);
-                broadcastMessage("&e" + target.getName() + " &7was killed by &e" + damager.getName());
-                gameManager.getPlayerObject(damager.getUniqueId()).addKill(1);
             }
         }
     }
@@ -356,7 +338,7 @@ public class StickFight implements Game, Listener {
         if(getPlayers().contains(player.getUniqueId())) {
             if(player.getLocation().getY() <= 85) {
                 if(lastHitter.get(player.getUniqueId()) == null) {
-                    broadcastMessage("&e" + player.getName() + " &7jumped into the void!");
+                    broadcastMessage("&e" + player.getName() + " &7fell into the void!");
                     doDeath(player);
                     return;
                 }
@@ -377,11 +359,15 @@ public class StickFight implements Game, Listener {
                 }
             }
         }
+        e.setCancelled(true);
     }
 
     @EventHandler
     public void onBlockPlace(BlockPlaceEvent e) {
-        if(gameState != GameState.ACTIVE) return;
+        if(gameState != GameState.ACTIVE) {
+            e.setCancelled(true);
+            e.setBuild(false);
+        }
         if(getGameplayFlags().canPlaceBlocks) {
             if(!getGameplayFlags().blockPlaceAllowed.contains(e.getBlock().getType())) {
                 if(!e.getPlayer().isOp()) {
@@ -390,94 +376,62 @@ public class StickFight implements Game, Listener {
                 }
             }
         }
-        if(!e.canBuild()) return;
-        Player player = e.getPlayer();
-        ItemStack placed = e.getItemInHand();
-        if(getPlayers().contains(player.getUniqueId())) {
-            Location spawn = spawnLocations.get(player.getUniqueId());
-            if(e.getBlock().getZ() >= spawn.getZ() + 6 || e.getBlock().getZ() <= spawn.getZ() - 6) {
-                e.setBuild(false);
-                e.setCancelled(true);
-                player.sendMessage(ChatUtil.clr("&cYou can't build this far out!"));
-            }
-            if(e.getBlock().getY() > getDefaultY() + 9) {
-                e.setCancelled(true);
-                e.setBuild(false);
-                player.sendMessage(ChatUtil.clr("&cYou can't build this high!"));
-            }
-            Block b = e.getBlock();
-            new BukkitRunnable() {
-                int i = 0;
-                @Override
-                public void run() {
-                    if(!e.canBuild()) return;
-                    if(!player.isOnline()) {
-                        e.getBlock().setType(Material.AIR);
-                        cancel();
-                    }
-                    BlockPosition blockPosition = new BlockPosition(new Vector(b.getX(), b.getY(), b.getZ()));
-                    for(UUID pUuid : getPlayers()) {
-                        Player player1 = Bukkit.getPlayer(pUuid);
+        e.setCancelled(true);
+        e.setBuild(false);
+    }
 
-                        PacketContainer minePacket = gameManager.getPlugin().getManager().createPacket(PacketType.Play.Server.BLOCK_BREAK_ANIMATION);
-                        minePacket.getIntegers().write(0, getBlockEntityId(b));
-                        minePacket.getBlockPositionModifier().write(0, blockPosition);
-                        minePacket.getIntegers().write(1, i);
-                        try {
-                            if(!player1.isOnline()) break;
-                            gameManager.getPlugin().getManager().sendServerPacket(player1, minePacket);
-                        } catch (InvocationTargetException ex) {
-                            ex.printStackTrace();
-                        }
-                    }
-                    if(i == 9) {
-                        for(Player player1 : Bukkit.getOnlinePlayers()) {
-                            e.getBlock().setType(Material.AIR);
-                            PacketContainer minePacket = gameManager.getPlugin().getManager().createPacket(PacketType.Play.Server.BLOCK_BREAK_ANIMATION);
-                            minePacket.getIntegers().write(0, getBlockEntityId(b));
-                            minePacket.getBlockPositionModifier().write(0, blockPosition);
-                            minePacket.getIntegers().write(1, 0);
-                            try {
-                                gameManager.getPlugin().getManager().sendServerPacket(player1, minePacket);
-                            } catch (InvocationTargetException ex) {
-                                ex.printStackTrace();
-                            }
-                        }
-//                        PacketContainer minePacket = gameManager.getPlugin().getManager().createPacket(PacketType.Play.Server.BLOCK_BREAK_ANIMATION);
-//                        minePacket.getIntegers().write(0, getBlockEntityId(b));
-//                        minePacket.getBlockPositionModifier().write(0, blockPosition);
-//                        minePacket.getIntegers().write(1, 0);
-//                            try {
-//                                gameManager.getPlugin().getManager().sendServerPacket(p, minePacket);
-//                            } catch (InvocationTargetException ex) {
-//                                ex.printStackTrace();
-//                            }
-                        new BukkitRunnable() {
-                            @Override
-                            public void run() {
-                                ItemStack giveBack = new ItemBuilder(placed.getType(), placed.getData().getData()).setAmount(1).build();
-                                player.getInventory().addItem(giveBack);
-                                player.playSound(player.getLocation(), Sound.CHICKEN_EGG_POP, 1, 1);
-                            }
-                        }.runTaskLater(gameManager.getPlugin(), 60L);
-                        i = 1;
-                        cancel();
-                    }
-                    i++;
-                }
-            }.runTaskTimer(gameManager.getPlugin(), 0, 15L);
+    public void makeKits() {
+        // NoDebuff
+        noDebuff.addContent(new ItemBuilder(Material.DIAMOND_SWORD).setDisplayName(ChatUtil.clr("&7Sword")).addEnchant(Enchantment.DAMAGE_ALL, 3).addEnchant(Enchantment.DURABILITY, 3).addEnchant(Enchantment.FIRE_ASPECT, 2).build(), 0);
+        noDebuff.addContent(new ItemBuilder(Material.ENDER_PEARL).setAmount(16).build(), 1);
+        noDebuff.addContent(new ItemBuilder(Material.COOKED_BEEF).setAmount(64).build(), 8);
+        noDebuff.addContent(potionBuilder(PotionType.SPEED, 1, "Potion of Swiftness", false, ""), 2);
+        noDebuff.addContent(potionBuilder(PotionType.SPEED, 1, "Potion of Swiftness", false, ""), 35);
+        noDebuff.addContent(potionBuilder(PotionType.SPEED, 1, "Potion of Swiftness", false, ""), 26);
+        noDebuff.addContent(potionBuilder(PotionType.SPEED, 1, "Potion of Swiftness", false, ""), 17);
+        noDebuff.addContent(potionBuilder(PotionType.FIRE_RESISTANCE, 0, "Potion of Fire Resistance", false, ""), 3);
+        for(int i =1; i < 28; i++) {
+            noDebuff.addContent(potionBuilder(PotionType.INSTANT_HEAL, 1, "Splash Potion of Healing", true, ""));
         }
+        noDebuff.addArmor(new ItemStack(Material.DIAMOND_BOOTS));
+        noDebuff.addArmor(new ItemStack(Material.DIAMOND_LEGGINGS));
+        noDebuff.addArmor(new ItemStack(Material.DIAMOND_CHESTPLATE));
+        noDebuff.addArmor(new ItemStack(Material.DIAMOND_HELMET));
+
+        // oldkit
+
+        oldKit.addContent(new ItemBuilder(Material.DIAMOND_SWORD).setDisplayName(ChatUtil.clr("&7Sword")).build(), 0);
+        oldKit.addArmor(new ItemStack(Material.DIAMOND_BOOTS));
+        oldKit.addArmor(new ItemStack(Material.DIAMOND_LEGGINGS));
+        oldKit.addArmor(new ItemStack(Material.DIAMOND_CHESTPLATE));
+        oldKit.addArmor(new ItemStack(Material.DIAMOND_HELMET));
+
+        // vanilla kit
+
+        vanillaKit.addContent(new ItemBuilder(Material.DIAMOND_SWORD).setDisplayName(ChatUtil.clr("&7Sword")).addEnchant(Enchantment.DURABILITY, 69).build(), 0);
+        vanillaKit.addContent(new ItemBuilder(Material.FISHING_ROD).setDisplayName(ChatUtil.clr("&7Rod")).build(), 1);
+        vanillaKit.addContent(new ItemBuilder(Material.FLINT_AND_STEEL).setDisplayName(ChatUtil.clr("&7Fire")).setDurability(5).build(), 8);
+        vanillaKit.addArmor(new ItemStack(Material.IRON_BOOTS));
+        vanillaKit.addArmor(new ItemStack(Material.IRON_LEGGINGS));
+        vanillaKit.addArmor(new ItemStack(Material.IRON_CHESTPLATE));
+        vanillaKit.addArmor(new ItemStack(Material.IRON_HELMET));
     }
 
-    public void setGameState(GameState state) {
-        this.gameState = state;
-    }
+    public static ItemStack potionBuilder(PotionType type, int level, String name, boolean splashable, String... lore){
 
-    private static int getBlockEntityId(Block block) {
-        // There will be some overlap here, but these effects are very localized so it should be OK.
-        return   ((block.getX() & 0xFFF) << 20)
-                | ((block.getZ() & 0xFFF) << 8)
-                | (block.getY() & 0xFF);
-    }
+        Potion potion = new Potion(type, level);
+        potion.setSplash(splashable);
 
+        ItemStack item = potion.toItemStack(1);
+
+
+        ItemMeta meta = item.getItemMeta();
+        meta.setDisplayName(ChatUtil.clr(name));
+        meta.setLore(Arrays.asList(lore));
+        meta.addItemFlags(ItemFlag.HIDE_POTION_EFFECTS);
+
+        item.setItemMeta(meta);
+
+        return item;
+    }
 }
