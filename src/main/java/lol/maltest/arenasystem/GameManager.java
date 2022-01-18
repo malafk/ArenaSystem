@@ -4,16 +4,24 @@ import dev.jcsoftware.jscoreboards.JScoreboardTeam;
 import lol.maltest.arenasystem.arena.ArenaInstance;
 import lol.maltest.arenasystem.arena.ArenaManager;
 import lol.maltest.arenasystem.map.MapSettings;
+import lol.maltest.arenasystem.redis.MessageAction;
+import lol.maltest.arenasystem.redis.RedisMessage;
 import lol.maltest.arenasystem.templates.Game;
 import lol.maltest.arenasystem.templates.GamePlayer;
 import lol.maltest.arenasystem.util.ChatUtil;
+import lol.maltest.arenasystem.util.ItemBuilder;
 import org.apache.commons.lang.StringUtils;
 import org.bukkit.*;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Firework;
 import org.bukkit.entity.Player;
 import org.bukkit.event.HandlerList;
+import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.FireworkMeta;
+import org.bukkit.potion.Potion;
+import org.bukkit.potion.PotionEffect;
+import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.StringUtil;
 import org.bukkit.util.Vector;
@@ -80,8 +88,9 @@ public class GameManager {
 
 
         player.forEach(p -> {
-            Player finalPlayer = Bukkit.getPlayer(p);
-            System.out.println(finalPlayer.getName() + " got added to a game");
+            System.out.println(p);
+            Player finalPlayer = Bukkit.getPlayer(UUID.fromString(p));
+//            System.out.println(finalPlayer.getName() + " got added to a game");
             playerGame.put(new GamePlayer(finalPlayer.getUniqueId(), gameUuid, lives), gameUuid);
             game.someoneJoined(finalPlayer, spectator);
         });
@@ -113,6 +122,8 @@ public class GameManager {
             Bukkit.getLogger().severe("Cant get that game.. probs doesnt exist");
             return;
         }
+
+
         ArrayList<String> teamWhoWon = new ArrayList<>();
         boolean noWinner = false;
         Player whoWon = null;
@@ -120,10 +131,13 @@ public class GameManager {
             noWinner = true;
         } else {
             whoWon = Bukkit.getPlayer(getPlayersAlive(uuid).get(0));
+            setEndGame(whoWon);
         }
         if(!noWinner) {
             getTeamsAlive(uuid).get(0).getEntities().forEach(p -> {
-                teamWhoWon.add(Bukkit.getPlayer(p).getName());
+                if(Bukkit.getPlayer(p) != null) {
+                    teamWhoWon.add(Bukkit.getPlayer(p).getName());
+                }
             });
         }
         if(!noWinner) {
@@ -221,13 +235,9 @@ public class GameManager {
                 getPlayers(uuid).forEach(p -> {
                     Player player = Bukkit.getPlayer(p);
                     player.getInventory().clear();
-                    player.getInventory().setHelmet(null);
-                    player.getInventory().setChestplate(null);
-                    player.getInventory().setLeggings(null);
-                    player.getInventory().setBoots(null);
                     player.setGameMode(GameMode.SURVIVAL);
-                    player.teleport(new Location(arenaManager.getWorld(), 0, 5,0));
-                    // TODO: bungee send to hub
+                    toggleSpectator(Bukkit.getPlayer(p), false);
+                    removeFromGames(player);
                     game.end();
                     playerGame.remove(getPlayerObject(p));
                 });
@@ -332,6 +342,57 @@ public class GameManager {
         return players;
     }
 
+    public void removeFromGames(Player player) {
+        player.sendMessage(ChatUtil.clr("&cRemoving you from games..."));
+        if(plugin.gameManager().getPlayerObject(player.getUniqueId()) != null) {
+            GamePlayer gamePlayer = plugin.gameManager().getPlayerObject(player.getUniqueId());
+            Game game = plugin.gameManager().getGame(gamePlayer.getGameUuid());
+            plugin.gameManager().removePlayerFromGame(gamePlayer);
+            game.tryEnd();
+        }
+        String json = new RedisMessage(MessageAction.REMOVE_FROM_GAMES)
+                .setParam("player", player.getName())
+                .toJSON();
+        plugin.redisManager.publish("ayrie:servers", json);
+    }
+
+    public void setEndGame(Player player) {
+        ItemStack lobbyItem = new ItemBuilder(Material.INK_SACK, (short) 14).setDisplayName("&cReturn to lobby").setLore(ChatUtil.clr("&7&oWhy you looking here anyways...")).build();
+        player.closeInventory();
+        player.getInventory().clear();
+        player.getInventory().addItem(lobbyItem);
+        System.out.println("gave lobby item");
+    }
+
+    public void toggleSpectator(Player player, Boolean enable) {
+        if(enable) {
+            getPlayerObject(player.getUniqueId()).setSpectator(false);
+            getPlayers(getPlayerObject(player.getUniqueId()).getGameUuid()).forEach(p -> {
+                Player p1= Bukkit.getPlayer(p);
+                p1.hidePlayer(player);
+            });
+            player.getInventory().setHelmet(null);
+            player.getInventory().setChestplate(null);
+            player.getInventory().setLeggings(null);
+            player.getInventory().setBoots(null);
+            player.addPotionEffect(new PotionEffect(PotionEffectType.INVISIBILITY, 50000, 0));
+            player.setAllowFlight(true);
+            player.setFlying(true);
+        } else {
+            getPlayerObject(player.getUniqueId()).setSpectator(true);
+            getPlayers(getPlayerObject(player.getUniqueId()).getGameUuid()).forEach(p -> {
+                Player p1= Bukkit.getPlayer(p);
+                p1.showPlayer(player);
+            });
+            player.removePotionEffect(PotionEffectType.INVISIBILITY);
+            player.setAllowFlight(false);
+            player.setFlying(false);
+        }
+    }
+
+    public boolean isSpec(Player player) {
+        return player.hasPotionEffect(PotionEffectType.INVISIBILITY);
+    }
 
 
 

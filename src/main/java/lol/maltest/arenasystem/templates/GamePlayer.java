@@ -12,6 +12,7 @@ public class GamePlayer {
     UUID gameUuid;
     int lives;
     int kills;
+    boolean spectator;
 //    JScoreboardTeam team;
 
     public GamePlayer(UUID playerUuid, UUID gameUuid, int lives) {
@@ -44,6 +45,14 @@ public class GamePlayer {
 
     public int getKills() {
         return kills;
+    }
+
+    public void setSpectator(boolean yes) {
+        spectator = yes;
+    }
+
+    public boolean isSpectator() {
+        return spectator;
     }
 
     public UUID getPlayerUuid() {

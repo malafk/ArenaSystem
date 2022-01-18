@@ -12,3 +12,5 @@ commands:
   admin:
     description: admin command
     permission: ayrie.admin
+  pasteschematic:
+    description: lol

@@ -13,6 +13,7 @@ import lol.maltest.arenasystem.templates.games.pvpbrawl.kit.NoDebuffKit;
 import lol.maltest.arenasystem.templates.games.pvpbrawl.kit.OldKit;
 import lol.maltest.arenasystem.templates.games.pvpbrawl.kit.VanillaKit;
 import lol.maltest.arenasystem.templates.games.spleef.Spleef;
+import lol.maltest.arenasystem.templates.games.stickfight.StickFight;
 import lol.maltest.arenasystem.util.ChatUtil;
 import lol.maltest.arenasystem.util.ItemBuilder;
 import org.bukkit.Bukkit;
@@ -33,6 +34,7 @@ import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.potion.Potion;
+import org.bukkit.potion.PotionEffectType;
 import org.bukkit.potion.PotionType;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
@@ -131,6 +133,7 @@ public class PvPBrawl implements Game, Listener {
                     Boolean used = entry.getValue();
                     Location loc = entry.getKey();
                     if (!used && !alreadyTeleported.contains(pUuid)) {
+                        player.spigot().respawn();
                         spawnLocations.put(player.getUniqueId(), loc);
                         spawnLocationsStart.replace(loc, true);
                         player.teleport(loc);
@@ -152,6 +155,7 @@ public class PvPBrawl implements Game, Listener {
                 spawnLocationsStart.replace(loc,true);
                 for (UUID p : team.getEntities()) {
                     Player player = Bukkit.getPlayer(p);
+                    player.spigot().respawn();
                     spawnLocations.put(player.getUniqueId(), loc);
                     player.teleport(loc);
                     alreadyTeleported.add(p);
@@ -176,30 +180,20 @@ public class PvPBrawl implements Game, Listener {
     public void doDeath(Player player) {
         gameManager.getPlayerObject(player.getUniqueId()).takeLive(1);
         arenaScoreboard.updateLives(uuid);
-
-        if(gameManager.getPlayerObject(player.getUniqueId()).getLives() <= 0) {
-            broadcastMessage("&e" + player.getName() + " &7has been eliminated!");
-            TitleAPI.sendTitle(player, 15, 40, 15, ChatUtil.clr("&c&lELIMINATED!"), ChatUtil.clr("&7Better luck next time!"));
-            player.teleport(arenaInstance.getLocation());
-            player.setGameMode(GameMode.SPECTATOR);
-            player.setAllowFlight(true);
-            player.setFlying(true);
-            player.setHealth(20);
-            player.setFoodLevel(20);
-            player.closeInventory();
-            player.getInventory().clear();
-            tryEnd();
-            return;
-        }
-        broadcastMessage("&e" + player.getName() + " &7has &e" +  gameManager.getPlayerObject(player.getUniqueId()).getLives() + " &7lives left.");
         player.teleport(arenaInstance.getLocation());
-        player.setGameMode(GameMode.SPECTATOR);
-        player.setAllowFlight(true);
-        player.setFlying(true);
+        gameManager.toggleSpectator(player, true);
         player.setHealth(20);
         player.setFoodLevel(20);
         player.closeInventory();
         player.getInventory().clear();
+        if(gameManager.getPlayerObject(player.getUniqueId()).getLives() <= 0) {
+            broadcastMessage("&e" + player.getName() + " &7has been eliminated!");
+            TitleAPI.sendTitle(player, 15, 40, 15, ChatUtil.clr("&c&lELIMINATED!"), ChatUtil.clr("&7Better luck next time!"));
+            gameManager.setEndGame(player);
+            tryEnd();
+            return;
+        }
+        broadcastMessage("&e" + player.getName() + " &7has &e" +  gameManager.getPlayerObject(player.getUniqueId()).getLives() + " &7lives left.");
         new BukkitRunnable() {
             int seconds = 5;
             @Override
@@ -219,11 +213,14 @@ public class PvPBrawl implements Game, Listener {
 
     @Override
     public void doRespawn(Player player) {
-        player.setFlying(false);
-        player.setGameMode(GameMode.SURVIVAL);
         player.teleport(spawnLocations.get(player.getUniqueId()));
-        player.setAllowFlight(false);
         giveKit(player);
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                gameManager.toggleSpectator(player, false);
+            }
+        }.runTaskLater(gameManager.getPlugin(), 6L);
     }
 
     @Override
@@ -236,6 +233,7 @@ public class PvPBrawl implements Game, Listener {
 
     @Override
     public void tryEnd() {
+        if(gameState == GameState.WON) return;
         if(gameState != GameState.ACTIVE) return;
         if(gameManager.getPlayers(uuid).size() >= 2) {
             if(gameManager.getPlayersAlive(uuid).size() >= 2) {
@@ -296,20 +294,22 @@ public class PvPBrawl implements Game, Listener {
     }
 
     public void giveKit(Player player) {
+        if(gameState.equals(GameState.WON)) return;
         kit.giveKit(player);
     }
 
     @EventHandler
     public void onDamage(EntityDamageByEntityEvent e) {
+        if(!getPlayers().contains(e.getEntity().getUniqueId())) return;
         if(gameState != GameState.ACTIVE) {
             e.setCancelled(true);
+            e.getEntity().sendMessage(ChatUtil.clr("&cThe game has ended!"));
             return;
         }
         if(!getGameplayFlags().canPvP) e.setCancelled(true);
         if(e.getDamager() instanceof Player && e.getEntity() instanceof Player) {
             Player damager = (Player) e.getDamager();
             Player target = (Player) e.getEntity();
-            if(damager.getScoreboard() == null) e.setCancelled(true);
             if(damager.getScoreboard().getPlayerTeam(damager).getEntries().contains(target.getName())) {
                 damager.sendMessage(ChatUtil.clr("&cFriendly fire is disabled."));
                 e.setCancelled(true);
@@ -320,6 +320,7 @@ public class PvPBrawl implements Game, Listener {
 
     @EventHandler
     public void onDamage(EntityDamageEvent e) {
+        if(!getPlayers().contains(e.getEntity().getUniqueId())) return;
         if(gameState != GameState.ACTIVE) return;
         if(e.getEntity() instanceof Player) {
             Player target = (Player) e.getEntity();
@@ -332,9 +333,10 @@ public class PvPBrawl implements Game, Listener {
 
     @EventHandler
     public void playerMoveEvent(PlayerMoveEvent e) {
+        if(!getPlayers().contains(e.getPlayer().getUniqueId())) return;
         if(gameState != GameState.ACTIVE) return;
         Player player = e.getPlayer();
-        if(player.getGameMode().equals(GameMode.SPECTATOR)) return;
+        if(player.hasPotionEffect(PotionEffectType.INVISIBILITY)) return;
         if(getPlayers().contains(player.getUniqueId())) {
             if(player.getLocation().getY() <= 85) {
                 if(lastHitter.get(player.getUniqueId()) == null) {
@@ -352,6 +354,7 @@ public class PvPBrawl implements Game, Listener {
 
     @EventHandler
     public void onBlockBreak(BlockBreakEvent e) {
+        if(!getPlayers().contains(e.getPlayer().getUniqueId())) return;
         if(getGameplayFlags().canBreakBlocks) {
             if(!getGameplayFlags().blockBreakAllowed.contains(e.getBlock().getType())) {
                 if(!e.getPlayer().isOp()) {
@@ -364,6 +367,7 @@ public class PvPBrawl implements Game, Listener {
 
     @EventHandler
     public void onBlockPlace(BlockPlaceEvent e) {
+        if(!getPlayers().contains(e.getPlayer().getUniqueId())) return;
         if(gameState != GameState.ACTIVE) {
             e.setCancelled(true);
             e.setBuild(false);

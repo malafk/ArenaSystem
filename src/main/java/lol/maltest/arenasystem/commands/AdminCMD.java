@@ -1,6 +1,8 @@
 package lol.maltest.arenasystem.commands;
 
+import com.mojang.authlib.GameProfile;
 import lol.maltest.arenasystem.ArenaSystem;
+import lol.maltest.arenasystem.templates.Game;
 import lol.maltest.arenasystem.util.ChatUtil;
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
@@ -25,9 +27,28 @@ public class AdminCMD implements CommandExecutor {
             Player player = (Player) sender;
             if(player.hasPermission("ayrie.admin")) {
                 if(args.length < 1) {
-                    player.sendMessage(ChatUtil.clr("&c/admin <setlives/addkills>"));
+                    player.sendMessage(ChatUtil.clr("&c/admin <setlives/addkills/endgame/fly>"));
                 } else {
                     switch (args[0]) {
+                        case "endgame":
+                            if(args.length > 1) {
+                                if(Bukkit.getPlayer(args[1]) == null) {
+                                    player.sendMessage(ChatUtil.clr("&cI cannot find " + args[1]));
+                                } else {
+                                    Player target = Bukkit.getPlayer(args[1]);
+                                    if(plugin.gameManager().getPlayerObject(target.getUniqueId()) != null) {
+                                        Game game =  plugin.gameManager().getGame(plugin.gameManager().getPlayerObject(target.getUniqueId()).getGameUuid());
+                                        plugin.gameManager().endGame(plugin.gameManager().getPlayerObject(target.getUniqueId()).getGameUuid(), false);
+                                        player.sendMessage(ChatUtil.clr("&aDone"));
+                                    }
+                                }
+                            }
+                            break;
+                        case "fly":
+                            player.setAllowFlight(true);
+                            player.setFlying(true);
+                            player.sendMessage(ChatUtil.clr("&cYou are now flying!"));
+                            break;
                         case "setlives":
                             if(args.length > 2) {
                                 if(!isInt(args[2])) {

@@ -5,5 +5,6 @@ public enum MessageAction {
     REMOVE_SERVER,
     SYNC_SERVERS,
 
-    MAKE_GAME;
+    MAKE_GAME,
+    REMOVE_FROM_GAMES;
 }

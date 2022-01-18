@@ -12,7 +12,10 @@ import lol.maltest.arenasystem.arena.ArenaScoreboard;
 import lol.maltest.arenasystem.map.Map;
 import lol.maltest.arenasystem.templates.Game;
 import lol.maltest.arenasystem.templates.GameplayFlags;
+import lol.maltest.arenasystem.templates.games.pvpbrawl.PvPBrawl;
 import lol.maltest.arenasystem.templates.games.spleef.kit.SpleefKit;
+import lol.maltest.arenasystem.templates.games.stickfight.StickFight;
+import lol.maltest.arenasystem.templates.games.tntrun.TntRun;
 import lol.maltest.arenasystem.util.ChatUtil;
 import lol.maltest.arenasystem.util.ItemBuilder;
 import org.bukkit.*;
@@ -31,6 +34,7 @@ import org.bukkit.event.entity.ProjectileHitEvent;
 import org.bukkit.event.player.PlayerEggThrowEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.Vector;
 
@@ -128,6 +132,7 @@ public class Spleef implements Game, Listener {
                         if (!used && !alreadyTeleported.contains(pUuid)) {
                             spawnLocations.put(player.getUniqueId(), loc);
                             spawnLocationsStart.replace(loc, true);
+                            player.spigot().respawn();
                             player.teleport(loc);
                             alreadyTeleported.add(pUuid);
                             player.setGameMode(GameMode.SURVIVAL);
@@ -147,6 +152,7 @@ public class Spleef implements Game, Listener {
                     spawnLocationsStart.replace(loc,true);
                     for (UUID p : team.getEntities()) {
                         Player player = Bukkit.getPlayer(p);
+                        player.spigot().respawn();
                         spawnLocations.put(player.getUniqueId(), loc);
                         player.teleport(loc);
                         alreadyTeleported.add(p);
@@ -171,30 +177,20 @@ public class Spleef implements Game, Listener {
     public void doDeath(Player player) {
         gameManager.getPlayerObject(player.getUniqueId()).takeLive(1);
         arenaScoreboard.updateLives(uuid);
-
-        if(gameManager.getPlayerObject(player.getUniqueId()).getLives() <= 0) {
-            broadcastMessage("&e" + player.getName() + " &7has been eliminated!");
-            TitleAPI.sendTitle(player, 15, 40, 15, ChatUtil.clr("&c&lELIMINATED!"), ChatUtil.clr("&7Better luck next time!"));
-            player.teleport(arenaInstance.getLocation());
-            player.setGameMode(GameMode.SPECTATOR);
-            player.setAllowFlight(true);
-            player.setFlying(true);
-            player.setHealth(20);
-            player.setFoodLevel(20);
-            player.closeInventory();
-            player.getInventory().clear();
-            tryEnd();
-            return;
-        }
-        broadcastMessage("&e" + player.getName() + " &7has &e" +  gameManager.getPlayerObject(player.getUniqueId()).getLives() + " &7lives left.");
         player.teleport(arenaInstance.getLocation());
-        player.setGameMode(GameMode.SPECTATOR);
-        player.setAllowFlight(true);
-        player.setFlying(true);
+        gameManager.toggleSpectator(player, true);
         player.setHealth(20);
         player.setFoodLevel(20);
         player.closeInventory();
         player.getInventory().clear();
+        if(gameManager.getPlayerObject(player.getUniqueId()).getLives() <= 0) {
+            broadcastMessage("&e" + player.getName() + " &7has been eliminated!");
+            TitleAPI.sendTitle(player, 15, 40, 15, ChatUtil.clr("&c&lELIMINATED!"), ChatUtil.clr("&7Better luck next time!"));
+            gameManager.setEndGame(player);
+            tryEnd();
+            return;
+        }
+        broadcastMessage("&e" + player.getName() + " &7has &e" +  gameManager.getPlayerObject(player.getUniqueId()).getLives() + " &7lives left.");
         new BukkitRunnable() {
             int seconds = 5;
             @Override
@@ -214,11 +210,14 @@ public class Spleef implements Game, Listener {
 
     @Override
     public void doRespawn(Player player) {
-        player.setFlying(false);
-        player.setGameMode(GameMode.SURVIVAL);
         player.teleport(spawnLocations.get(player.getUniqueId()));
-        player.setAllowFlight(false);
         giveKit(player);
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                gameManager.toggleSpectator(player, false);
+            }
+        }.runTaskLater(gameManager.getPlugin(), 6L);
     }
 
     @Override
@@ -231,6 +230,7 @@ public class Spleef implements Game, Listener {
 
     @Override
     public void tryEnd() {
+        if(gameState == GameState.WON) return;
         if(gameManager.getPlayers(uuid).size() >= 2) {
             if(gameManager.getPlayersAlive(uuid).size() >= 2) {
                 if(gameManager.getTeamsAlive(uuid).size() <= 1) {
@@ -290,6 +290,7 @@ public class Spleef implements Game, Listener {
     }
     
     public void giveKit(Player player) {
+        if(gameState.equals(PvPBrawl.GameState.WON)) return;
         spleefKit.giveKit(player);
     }
 
@@ -297,6 +298,7 @@ public class Spleef implements Game, Listener {
     public void onDamage(EntityDamageByEntityEvent e) {
         if(gameState != GameState.ACTIVE) {
             e.setCancelled(true);
+            e.getEntity().sendMessage(ChatUtil.clr("&cThe game has ended!"));
             return;
         }
         if(!getPlayers().contains(e.getEntity().getUniqueId())) return;
@@ -362,7 +364,7 @@ public class Spleef implements Game, Listener {
         if(!getPlayers().contains(e.getPlayer().getUniqueId())) return;
         if(gameState != GameState.ACTIVE) return;
         Player player = e.getPlayer();
-        if(player.getGameMode().equals(GameMode.SPECTATOR)) return;
+        if(player.hasPotionEffect(PotionEffectType.INVISIBILITY)) return;
         if(getPlayers().contains(player.getUniqueId())) {
             if(player.getLocation().getY() <= 85) {
                 if(lastHitter.get(player.getUniqueId()) == null) {
@@ -394,7 +396,6 @@ public class Spleef implements Game, Listener {
                     double distance = pl.getLocation().distance(checkLoc);
                     if(distance <= 1.5) {
                         OfflinePlayer getPlayer = e.getPlayer();
-                        System.out.println("afsdf");
                         if(e.getPlayer().getScoreboard().getPlayerTeam(getPlayer).hasPlayer(pl)) {
                             e.setCancelled(true);
                             getPlayer.getPlayer().sendMessage(ChatUtil.clr("&cDon't team grief."));
@@ -402,6 +403,8 @@ public class Spleef implements Game, Listener {
                         }
                     }
                 }
+                ItemStack snowball = new ItemBuilder(Material.SNOW_BALL).setAmount(1).build();
+                e.getPlayer().getInventory().addItem(snowball);
             }
         }
     }

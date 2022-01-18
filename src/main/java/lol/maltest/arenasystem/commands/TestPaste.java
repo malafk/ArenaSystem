@@ -6,6 +6,7 @@ import lol.maltest.arenasystem.templates.Game;
 import lol.maltest.arenasystem.templates.games.pvpbrawl.PvPBrawl;
 import lol.maltest.arenasystem.templates.games.spleef.Spleef;
 import lol.maltest.arenasystem.templates.games.stickfight.StickFight;
+import lol.maltest.arenasystem.templates.games.tntrun.TntRun;
 import lol.maltest.arenasystem.util.ChatUtil;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -30,7 +31,7 @@ public class TestPaste implements CommandExecutor {
             Player player = (Player) sender;
 
             UUID uuid = UUID.randomUUID();
-            Game game = new Spleef(main.gameManager(), uuid);
+            Game game = new PvPBrawl(main.gameManager(), uuid);
             main.gameManager().addGame(uuid, game);
             if(args.length > 0) {
                 if(args[0].equals("all")) {

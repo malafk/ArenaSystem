@@ -29,10 +29,9 @@ public final class ArenaSystem extends JavaPlugin {
 
     private ArenaSystem plugin;
     private GameManager gameManager;
-    public JedisPool pool;
     public RedisManager redisManager;
     ProtocolManager manager;
-    private boolean j = false;
+    private boolean j = true;
 
     @Override
     public void onEnable() {
@@ -41,8 +40,6 @@ public final class ArenaSystem extends JavaPlugin {
 
         if(j) {
             this.redisManager = new RedisManager(this);
-            pool = new JedisPool("127.0.0.1", 6379);
-            System.out.println("connected to redis!");
             redisManager.subscribe();
         }
 
@@ -59,6 +56,7 @@ public final class ArenaSystem extends JavaPlugin {
         getCommand("testpaste").setExecutor(new TestPaste(this));
         getCommand("makevoid").setExecutor(new MakeVoid());
         getCommand("admin").setExecutor(new AdminCMD(this));
+        getCommand("pasteschematic").setExecutor(new PasteSchematic());
 
         if(j) {
             System.out.println("registering game with proxy");
@@ -66,7 +64,7 @@ public final class ArenaSystem extends JavaPlugin {
                     .setParam("server", "game")
                     .setParam("port", String.valueOf(getServer().getPort()))
                     .toJSON();
-            plugin.pool.getResource().publish("ayrie:servers", json);
+            plugin.redisManager.publish("ayrie:servers", json);
         }
     }
 
@@ -78,9 +76,9 @@ public final class ArenaSystem extends JavaPlugin {
                     .setParam("server", "game")
                     .setParam("port", String.valueOf(getServer().getPort()))
                     .toJSON();
-            plugin.pool.getResource().publish("ayrie:servers", json);
+            plugin.redisManager.publish("ayrie:servers", json);
             System.out.println("done");
-            pool.close();
+            plugin.redisManager.subscriber.close();
         }
         // Plugin shutdown logic
     }

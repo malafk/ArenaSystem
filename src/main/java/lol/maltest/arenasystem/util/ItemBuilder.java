@@ -92,7 +92,7 @@ public class ItemBuilder {
 
     public ItemBuilder setDisplayName(String displayname) {
         ItemMeta meta = getItemMeta();
-        meta.setDisplayName(displayname);
+        meta.setDisplayName(ChatUtil.clr(displayname));
         setItemMeta(meta);
         return this;
     }
