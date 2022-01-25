@@ -36,6 +36,7 @@ public class ArenaScoreboard {
         lines.add("&7&m-------------------");
         lines.add("&7Waiting for players...");
         lines.add("&7&m-------------------");
+        lines.add("&7mcevents.club");
         scoreboard.setLines(lines);
     }
 
@@ -60,8 +61,8 @@ public class ArenaScoreboard {
         });
     }
 
-
     public void updateLives(UUID gameUuid) {
+        int people = 0;
         lines.clear();
         lines.add("&7&m-------------------");
         lines.add("&f&lPlayers:");
@@ -76,6 +77,24 @@ public class ArenaScoreboard {
             }
         }
         lines.add("&7&m-------------------");
+        lines.add("&7mcevents.club");
+        scoreboard.setLines(lines);
+    }
+
+    public void updateParkourRace(UUID gameUuid) {
+        lines.clear();
+        lines.add("&7&m-------------------");
+        lines.add("&f&lHas Completed:");
+        for(UUID pUuid : gameManager.getPlayers(gameUuid)) {
+            Player loopedPlayer = Bukkit.getPlayer(pUuid);
+            for(JScoreboardTeam team : scoreboard.getTeams()) {
+                if(team.isOnTeam(pUuid)) {
+                    lines.add(team.getDisplayName() + " &7" + loopedPlayer.getName() + "&f: " + (gameManager.getPlayerObject(loopedPlayer.getUniqueId()).completed() ? "&a✓" : "&cX"));
+                }
+            }
+        }
+        lines.add("&7&m-------------------");
+        lines.add("&7mcevents.club");
         scoreboard.setLines(lines);
     }
 

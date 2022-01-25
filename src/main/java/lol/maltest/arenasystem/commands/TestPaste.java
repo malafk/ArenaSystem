@@ -3,6 +3,7 @@ package lol.maltest.arenasystem.commands;
 import com.mojang.authlib.GameProfile;
 import lol.maltest.arenasystem.ArenaSystem;
 import lol.maltest.arenasystem.templates.Game;
+import lol.maltest.arenasystem.templates.games.parkourrace.ParkourRace;
 import lol.maltest.arenasystem.templates.games.pvpbrawl.PvPBrawl;
 import lol.maltest.arenasystem.templates.games.spleef.Spleef;
 import lol.maltest.arenasystem.templates.games.stickfight.StickFight;
@@ -31,7 +32,24 @@ public class TestPaste implements CommandExecutor {
             Player player = (Player) sender;
 
             UUID uuid = UUID.randomUUID();
-            Game game = new PvPBrawl(main.gameManager(), uuid);
+            Game game = null;
+            switch (args[1]) {
+                case "spleef":
+                    game = new Spleef(main.gameManager(), uuid);
+                    break;
+                case "pvpbrawl":
+                    game = new PvPBrawl(main.gameManager(), uuid);
+                    break;
+                case "parkourrace":
+                    game = new ParkourRace(main.gameManager(), uuid);
+                    break;
+                case "stickfight":
+                    game = new StickFight(main.gameManager(), uuid);
+                    break;
+                case "tntrun":
+                    game = new TntRun(main.gameManager(), uuid);
+                    break;
+            }
             main.gameManager().addGame(uuid, game);
             if(args.length > 0) {
                 if(args[0].equals("all")) {
@@ -41,7 +59,7 @@ public class TestPaste implements CommandExecutor {
                             players.add(player1.getName());
                         }
                     }
-                    main.gameManager().addPlayerToGame(uuid, players, game.getDefaultLives(), false);
+                    main.gameManager().forceAddByNames(uuid, players, game.getDefaultLives(), false);
                     return false;
                 }
                 if(args[0].equals("force")) {

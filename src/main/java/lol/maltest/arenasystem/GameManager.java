@@ -3,11 +3,13 @@ package lol.maltest.arenasystem;
 import dev.jcsoftware.jscoreboards.JScoreboardTeam;
 import lol.maltest.arenasystem.arena.ArenaInstance;
 import lol.maltest.arenasystem.arena.ArenaManager;
+import lol.maltest.arenasystem.arena.ArenaScoreboard;
 import lol.maltest.arenasystem.map.MapSettings;
 import lol.maltest.arenasystem.redis.MessageAction;
 import lol.maltest.arenasystem.redis.RedisMessage;
 import lol.maltest.arenasystem.templates.Game;
 import lol.maltest.arenasystem.templates.GamePlayer;
+import lol.maltest.arenasystem.templates.Kit;
 import lol.maltest.arenasystem.util.ChatUtil;
 import lol.maltest.arenasystem.util.ItemBuilder;
 import org.apache.commons.lang.StringUtils;
@@ -88,8 +90,31 @@ public class GameManager {
 
 
         player.forEach(p -> {
-            System.out.println(p);
             Player finalPlayer = Bukkit.getPlayer(UUID.fromString(p));
+//            System.out.println(finalPlayer.getName() + " got added to a game");
+            playerGame.put(new GamePlayer(finalPlayer.getUniqueId(), gameUuid, lives), gameUuid);
+            game.someoneJoined(finalPlayer, spectator);
+        });
+
+        if(spectator) return;
+
+        if (getPlayers(gameUuid).size() >= game.getMaxPlayers()) {
+            // game is full! we should start it
+            startGame(gameUuid);
+        }
+    }
+
+    public void forceAddByNames(UUID gameUuid, ArrayList<String> player, int lives, boolean spectator) {
+        Game game = activeGames.getOrDefault(gameUuid, null);
+
+        if (game == null) {
+            Bukkit.getLogger().severe("tried to add a player to a game that doesn't exist! " + gameUuid.toString());
+        }
+
+
+        player.forEach(p -> {
+            System.out.println(p);
+            Player finalPlayer = Bukkit.getPlayer(p);
 //            System.out.println(finalPlayer.getName() + " got added to a game");
             playerGame.put(new GamePlayer(finalPlayer.getUniqueId(), gameUuid, lives), gameUuid);
             game.someoneJoined(finalPlayer, spectator);
@@ -115,7 +140,7 @@ public class GameManager {
         game.start();
     }
 
-    public void endGame(UUID uuid, boolean teams) {
+    public void endGame(UUID uuid, boolean teams, boolean basedOfCompeted) {
         Game game = activeGames.getOrDefault(uuid, null);
 
         if(game == null) {
@@ -123,22 +148,41 @@ public class GameManager {
             return;
         }
 
-
+        Player whoWon = null;
         ArrayList<String> teamWhoWon = new ArrayList<>();
         boolean noWinner = false;
-        Player whoWon = null;
+        if(basedOfCompeted) {
+            if(getTeamsCompleted(uuid).size() == 0) {
+                noWinner = true;
+            }
+        }
         if(getPlayersAlive(uuid).size() == 0) {
             noWinner = true;
         } else {
-            whoWon = Bukkit.getPlayer(getPlayersAlive(uuid).get(0));
-            setEndGame(whoWon);
+            if(basedOfCompeted) {
+                for (JScoreboardTeam j : getTeamsCompleted(uuid)) {
+                    whoWon = Bukkit.getPlayer(j.getEntities().get(0));
+                }
+                setEndGame(whoWon);
+            } else {
+                whoWon = Bukkit.getPlayer(getPlayersAlive(uuid).get(0));
+                setEndGame(whoWon);
+            }
         }
         if(!noWinner) {
-            getTeamsAlive(uuid).get(0).getEntities().forEach(p -> {
-                if(Bukkit.getPlayer(p) != null) {
-                    teamWhoWon.add(Bukkit.getPlayer(p).getName());
-                }
-            });
+            if(basedOfCompeted) {
+                getTeamsCompleted(uuid).get(0).getEntities().forEach(p -> {
+                    if(Bukkit.getPlayer(p) != null) {
+                        teamWhoWon.add(Bukkit.getPlayer(p).getName());
+                    }
+                });
+            } else {
+                getTeamsAlive(uuid).get(0).getEntities().forEach(p -> {
+                    if(Bukkit.getPlayer(p) != null) {
+                        teamWhoWon.add(Bukkit.getPlayer(p).getName());
+                    }
+                });
+            }
         }
         if(!noWinner) {
             Player finalWhoWon = whoWon;
@@ -204,28 +248,30 @@ public class GameManager {
             }
         }
         game.broadcastMessage("&6");
-        game.broadcastMessage("&7Kills:");
-        LinkedHashMap<UUID, Integer> result = getKillers(uuid).entrySet().stream().sorted(Map.Entry.comparingByValue()).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (oldValue, newValue) -> oldValue, LinkedHashMap::new));;
-        int i = 0;
-        List<UUID> keyList = new ArrayList<UUID>(result.keySet());
-        Collections.reverse(keyList);
-        for (UUID k : keyList) {
-            UUID key = k;
-            Integer kills = result.get(key);
-            Player player = Bukkit.getPlayer(key);
-            if(i == 0) {
-                game.broadcastMessage("&c1st &7 - " + player.getName() + " - " + kills);
+        if(!basedOfCompeted) {
+            game.broadcastMessage("&7Kills:");
+            LinkedHashMap<UUID, Integer> result = getKillers(uuid).entrySet().stream().sorted(Map.Entry.comparingByValue()).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (oldValue, newValue) -> oldValue, LinkedHashMap::new));;
+            int i = 0;
+            List<UUID> keyList = new ArrayList<UUID>(result.keySet());
+            Collections.reverse(keyList);
+            for (UUID k : keyList) {
+                UUID key = k;
+                Integer kills = result.get(key);
+                Player player = Bukkit.getPlayer(key);
+                if(i == 0) {
+                    game.broadcastMessage("&c1st &7 - " + player.getName() + " - " + kills);
+                }
+                if(i == 1) {
+                    game.broadcastMessage("&62nd &7 - " + player.getName() + " - " + kills);
+                }
+                if(i == 2) {
+                    game.broadcastMessage("&e3rd &7 - " + player.getName() + " - " + kills);
+                }
+                if(i == result.size()) {
+                    break;
+                }
+                i++;
             }
-            if(i == 1) {
-                game.broadcastMessage("&62nd &7 - " + player.getName() + " - " + kills);
-            }
-            if(i == 2) {
-                game.broadcastMessage("&e3rd &7 - " + player.getName() + " - " + kills);
-            }
-            if(i == result.size()) {
-                break;
-            }
-            i++;
         }
         game.broadcastMessage("&c");
         game.broadcastMessage("&7&m--------------------------");
@@ -296,6 +342,37 @@ public class GameManager {
         return aliveTeams;
     }
 
+    public ArrayList<JScoreboardTeam> getTeamsCompleted(UUID gameUuid) {
+        ArrayList<JScoreboardTeam> aliveTeams = new ArrayList<>();
+        Game game = activeGames.getOrDefault(gameUuid, null);
+        int teams = 0;
+        for(JScoreboardTeam team : game.getScoreboard().getScoreboard().getTeams()) {
+            if(team.getEntities().size() >= 2) {
+                for(UUID p : team.getEntities()) {
+                    if(getPlayerObject(p).completed()) {
+                        teams++;
+                        if(teams >= 2) {
+                            System.out.println("added teams won");
+                            aliveTeams.add(team);
+                            return aliveTeams;
+                        }
+                    }
+                }
+            } else {
+                for(UUID p : team.getEntities()) {
+                    if(getPlayerObject(p) != null) {
+                        if(getPlayerObject(p).completed()) {
+                            aliveTeams.add(team);
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        return aliveTeams;
+    }
+
+
     public ArrayList<UUID> getPlayersAlive(UUID gameUuid) {
         ArrayList<UUID> players = new ArrayList<>();
         for(GamePlayer player : playerGame.keySet()) {
@@ -357,8 +434,8 @@ public class GameManager {
     }
 
     public void setEndGame(Player player) {
+        if(player == null) return;
         ItemStack lobbyItem = new ItemBuilder(Material.INK_SACK, (short) 14).setDisplayName("&cReturn to lobby").setLore(ChatUtil.clr("&7&oWhy you looking here anyways...")).build();
-        player.closeInventory();
         player.getInventory().clear();
         player.getInventory().addItem(lobbyItem);
         System.out.println("gave lobby item");
@@ -366,7 +443,7 @@ public class GameManager {
 
     public void toggleSpectator(Player player, Boolean enable) {
         if(enable) {
-            getPlayerObject(player.getUniqueId()).setSpectator(false);
+            getPlayerObject(player.getUniqueId()).setSpectator(true);
             getPlayers(getPlayerObject(player.getUniqueId()).getGameUuid()).forEach(p -> {
                 Player p1= Bukkit.getPlayer(p);
                 p1.hidePlayer(player);
@@ -379,7 +456,7 @@ public class GameManager {
             player.setAllowFlight(true);
             player.setFlying(true);
         } else {
-            getPlayerObject(player.getUniqueId()).setSpectator(true);
+            getPlayerObject(player.getUniqueId()).setSpectator(false);
             getPlayers(getPlayerObject(player.getUniqueId()).getGameUuid()).forEach(p -> {
                 Player p1= Bukkit.getPlayer(p);
                 p1.showPlayer(player);
@@ -388,6 +465,79 @@ public class GameManager {
             player.setAllowFlight(false);
             player.setFlying(false);
         }
+    }
+
+    public void teleportToSpawnLocations(lol.maltest.arenasystem.map.Map maps, ArenaInstance arenaInstance, ArenaScoreboard arenaScoreboard, Kit kit, UUID gameUuid, HashMap<UUID, Location> spawnLocations, HashMap<Location, Boolean> spawnLocationsStart) {
+
+        maps.getSpawnpoints(arenaInstance.getLocation()).forEach(location -> {
+            spawnLocationsStart.put(location, false);
+            System.out.println("added a spawn " + location);
+        });
+        ArrayList<UUID> alreadyTeleported = new ArrayList<>();
+        if (getPlayers(gameUuid).size() <= 2) {
+            for(UUID pUuid : getPlayers(gameUuid)) {
+                Player player = Bukkit.getPlayer(pUuid);
+                if(player.isDead()) {
+                    player.spigot().respawn();
+                }
+                for (java.util.Map.Entry<Location, Boolean> entry : spawnLocationsStart.entrySet()) {
+                    Boolean used = entry.getValue();
+                    Location loc = entry.getKey();
+                    if (!used && !alreadyTeleported.contains(pUuid)) {
+                        spawnLocations.put(player.getUniqueId(), loc);
+                        spawnLocationsStart.replace(loc, true);
+                        player.spigot().respawn();
+                        player.teleport(loc);
+                        alreadyTeleported.add(pUuid);
+                        player.setGameMode(GameMode.SURVIVAL);
+                        if(kit != null) {
+                            kit.giveKit(player);
+                        }
+                    }
+                }
+            }
+        } else {
+            for(JScoreboardTeam team : arenaScoreboard.getScoreboard().getTeams()) { // insert get scoreboardteam
+                Location loc = null;
+                for (java.util.Map.Entry<Location, Boolean> entry : spawnLocationsStart.entrySet()) {
+                    if (!entry.getValue()) {
+                        loc = entry.getKey();
+                        break;
+                    }
+                }
+                spawnLocationsStart.replace(loc,true);
+                for (UUID p : team.getEntities()) {
+                    Player player = Bukkit.getPlayer(p);
+                    player.spigot().respawn();
+                    spawnLocations.put(player.getUniqueId(), loc);
+                    player.teleport(loc);
+                    alreadyTeleported.add(p);
+                    player.setGameMode(GameMode.SURVIVAL);
+                    if(kit != null) {
+                        kit.giveKit(player);
+                    }
+                }
+            }
+            for (java.util.Map.Entry<Location, Boolean> entry : spawnLocationsStart.entrySet()) {
+                Location loc = entry.getKey();
+            }
+        }
+    }
+
+    public void onJoin(Player player, boolean spectator, UUID uuid) {
+        if(!spectator) {
+            player.sendMessage(ChatUtil.clr("&7You have been put in to " + uuid));
+            return;
+        }
+        toggleSpectator(player, true);
+        player.teleport(Bukkit.getPlayer(getPlayers(uuid).get(0)));
+        player.sendMessage(ChatUtil.clr("&7You are now spectating! &a" + uuid));
+    }
+
+    public void broadcastMessage(String message, UUID uuid) {
+        getPlayers(uuid).forEach(p -> {
+            Bukkit.getPlayer(p).sendMessage(ChatUtil.clr(message));
+        });
     }
 
     public boolean isSpec(Player player) {

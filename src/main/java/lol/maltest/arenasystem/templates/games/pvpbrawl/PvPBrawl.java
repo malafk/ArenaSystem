@@ -106,7 +106,7 @@ public class PvPBrawl implements Game, Listener {
         arenaScoreboard.addPlayersToScoreboard(uuid);
         System.out.println("start called");
         arenaScoreboard.updateLives(uuid);
-        teleportToSpawnLocations();
+        gameManager.teleportToSpawnLocations(map, arenaInstance, arenaScoreboard, kit, uuid, spawnLocations, spawnLocationsStart);
     }
 
     @Override
@@ -117,63 +117,8 @@ public class PvPBrawl implements Game, Listener {
     }
 
     @Override
-    public void teleportToSpawnLocations() {
-        map.getSpawnpoints(arenaInstance.getLocation()).forEach(location -> {
-            spawnLocationsStart.put(location, false);
-            System.out.println("added a spawn " + location);
-        });
-        ArrayList<UUID> alreadyTeleported = new ArrayList<>();
-        if (gameManager.getPlayers(uuid).size() <= 2) {
-            for(UUID pUuid : gameManager.getPlayers(uuid)) {
-                Player player = Bukkit.getPlayer(pUuid);
-                if(player.isDead()) {
-                    player.spigot().respawn();
-                }
-                for (java.util.Map.Entry<Location, Boolean> entry : spawnLocationsStart.entrySet()) {
-                    Boolean used = entry.getValue();
-                    Location loc = entry.getKey();
-                    if (!used && !alreadyTeleported.contains(pUuid)) {
-                        player.spigot().respawn();
-                        spawnLocations.put(player.getUniqueId(), loc);
-                        spawnLocationsStart.replace(loc, true);
-                        player.teleport(loc);
-                        alreadyTeleported.add(pUuid);
-                        player.setGameMode(GameMode.SURVIVAL);
-                        giveKit(player);
-                    }
-                }
-            }
-        } else {
-            for(JScoreboardTeam team : arenaScoreboard.getScoreboard().getTeams()) { // insert get scoreboardteam
-                Location loc = null;
-                for (java.util.Map.Entry<Location, Boolean> entry : spawnLocationsStart.entrySet()) {
-                    if (!entry.getValue()) {
-                        loc = entry.getKey();
-                        break;
-                    }
-                }
-                spawnLocationsStart.replace(loc,true);
-                for (UUID p : team.getEntities()) {
-                    Player player = Bukkit.getPlayer(p);
-                    player.spigot().respawn();
-                    spawnLocations.put(player.getUniqueId(), loc);
-                    player.teleport(loc);
-                    alreadyTeleported.add(p);
-                    player.setGameMode(GameMode.SURVIVAL);
-                    giveKit(player);
-                }
-            }
-            for (java.util.Map.Entry<Location, Boolean> entry : spawnLocationsStart.entrySet()) {
-                Location loc = entry.getKey();
-            }
-        }
-    }
-
-    @Override
     public void someoneJoined(Player player, boolean spectator) {
-        if(!spectator) {
-            player.sendMessage(ChatUtil.clr("&7You have been put in to &a" + uuid));
-        }
+        gameManager.onJoin(player, spectator, uuid);
     }
 
     @Override
@@ -225,10 +170,7 @@ public class PvPBrawl implements Game, Listener {
 
     @Override
     public void broadcastMessage(String message) {
-        gameManager.getPlayers(uuid).forEach(p -> {
-            Player player = Bukkit.getPlayer(p);
-            player.sendMessage(ChatUtil.clr(message));
-        });
+        gameManager.broadcastMessage(message, uuid);
     }
 
     @Override
@@ -239,7 +181,7 @@ public class PvPBrawl implements Game, Listener {
             if(gameManager.getPlayersAlive(uuid).size() >= 2) {
                 if(gameManager.getTeamsAlive(uuid).size() <= 1) {
                     setGameState(GameState.WON);
-                    gameManager.endGame(uuid, true);
+                    gameManager.endGame(uuid, true, false);
                     return;
                 }
             }
@@ -247,7 +189,7 @@ public class PvPBrawl implements Game, Listener {
         if(gameManager.getPlayersAlive(uuid).size() <= 1) {
             System.out.println("ending game");
             setGameState(GameState.WON);
-            gameManager.endGame(uuid, false);
+            gameManager.endGame(uuid, false, false);
         }
     }
 
@@ -300,10 +242,10 @@ public class PvPBrawl implements Game, Listener {
 
     @EventHandler
     public void onDamage(EntityDamageByEntityEvent e) {
-        if(!getPlayers().contains(e.getEntity().getUniqueId())) return;
-        if(gameState != GameState.ACTIVE) {
+        if(!getPlayers().contains(e.getDamager().getUniqueId())) return;
+        if(gameState == GameState.WON) {
             e.setCancelled(true);
-            e.getEntity().sendMessage(ChatUtil.clr("&cThe game has ended!"));
+            e.getDamager().sendMessage(ChatUtil.clr("&cThe game has ended!"));
             return;
         }
         if(!getGameplayFlags().canPvP) e.setCancelled(true);

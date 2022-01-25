@@ -12,6 +12,7 @@ public class MapSettings {
     public ArrayList<Map> spleefMaps = new ArrayList<>();
     public ArrayList<Map> pvpBrawlMaps = new ArrayList<>();
     public ArrayList<Map> tntRunMaps = new ArrayList<>();
+    public ArrayList<Map> parkourRaceMaps = new ArrayList<>();
 
     private GameManager gameManager;
     public Map stickFightOne;
@@ -22,6 +23,9 @@ public class MapSettings {
     private Map tntRunOne;
     private Map tntRunTwo;
     private Map tntRunThree;
+    private Map parkourRaceOne;
+    private Map parkourRaceTwo;
+    private Map parkourRaceThree;
 
     public MapSettings(GameManager gameManager) {
         this.gameManager = gameManager;
@@ -29,6 +33,7 @@ public class MapSettings {
         addSpleefMaps();
         addPvpBrawlMaps();
         addTntRunMaps();
+        addParkourRaceMaps();
     }
 
     private void addStickFightMaps() {
@@ -79,9 +84,26 @@ public class MapSettings {
         tntRunMaps.add(tntRunTwo);
 
         tntRunThree = new Map("TNT Run 3", "tntrun3");
-        tntRunThree.addSpawnpoint(new Location(Bukkit.getWorld("void"), -26, -26.5, -24, 90, 0));
-        tntRunThree.addSpawnpoint(new Location(Bukkit.getWorld("void"), -26, -26.5, -24, 90, 0));
+        tntRunThree.addSpawnpoint(new Location(Bukkit.getWorld("void"), -23, 7.5, -21, 90, 0));
+        tntRunThree.addSpawnpoint(new Location(Bukkit.getWorld("void"), -23, 7.6, -21, 90, 0));
         tntRunMaps.add(tntRunThree);
+    }
+
+    public void addParkourRaceMaps() {
+        parkourRaceOne = new Map("Oak Bunnies", "parkourrace1");
+        parkourRaceOne.addSpawnpoint(new Location(Bukkit.getWorld("void"), 28.5, 12.8,-19.5, -100, 0));
+        parkourRaceOne.addSpawnpoint(new Location(Bukkit.getWorld("void"), 28.5, 12.7,-19.5, -100, 0));
+        parkourRaceMaps.add(parkourRaceOne);
+
+        parkourRaceTwo = new Map("Bikini Bottom", "parkourrace2");
+        parkourRaceTwo.addSpawnpoint(new Location(Bukkit.getWorld("void"), -28.5, 9.8,-27.5, 150, 0));
+        parkourRaceTwo.addSpawnpoint(new Location(Bukkit.getWorld("void"), -28.5, 9.7,-27.5, 150, 0));
+        parkourRaceMaps.add(parkourRaceTwo);
+
+        parkourRaceThree = new Map("Birch Bunnies", "parkourrace3");
+        parkourRaceThree.addSpawnpoint(new Location(Bukkit.getWorld("void"), 23.5, 4.8,-16.5, -130, 0));
+        parkourRaceThree.addSpawnpoint(new Location(Bukkit.getWorld("void"), 23.5, 4.7,-16.5, -130, 0));
+        parkourRaceMaps.add(parkourRaceThree);
     }
 
 }

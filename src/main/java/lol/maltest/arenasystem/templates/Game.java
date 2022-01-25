@@ -9,24 +9,23 @@ import java.util.UUID;
 public interface Game {
 
 
-    public void setArena(ArenaInstance arena);
+    void setArena(ArenaInstance arena);
 
-    public void start();
-    public void end();
-    public void teleportToSpawnLocations();
-    public void someoneJoined(Player player, boolean spectator);
-    public void doDeath(Player player);
-    public void doRespawn(Player player);
-    public void broadcastMessage(String message);
-    public void tryEnd();
+    void start();
+    void end();
+    void someoneJoined(Player player, boolean spectator);
+    void doDeath(Player player);
+    void doRespawn(Player player);
+    void broadcastMessage(String message);
+    void tryEnd();
 
-    public GameplayFlags getGameplayFlags();
-    public int getDefaultLives();
-    public int getMinPlayers();
-    public int getMaxPlayers();
+    GameplayFlags getGameplayFlags();
+    int getDefaultLives();
+    int getMinPlayers();
+    int getMaxPlayers();
 
-    public ArenaScoreboard getScoreboard();
+    ArenaScoreboard getScoreboard();
 
-    public String getArenaSchematic();
+    String getArenaSchematic();
 
 }

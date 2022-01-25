@@ -24,6 +24,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.entity.Projectile;
 import org.bukkit.entity.Snowball;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
@@ -32,6 +33,7 @@ import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.ProjectileHitEvent;
 import org.bukkit.event.player.PlayerEggThrowEvent;
+import org.bukkit.event.player.PlayerItemDamageEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.potion.PotionEffectType;
@@ -73,13 +75,14 @@ public class Spleef implements Game, Listener {
     GameplayFlags thisGameFlags = new GameplayFlags();
 
     Random random;
+    Map map;
 
     public Spleef(GameManager gameManager, UUID uuid) {
         random = new Random();
         this.gameManager = gameManager;
         this.uuid = uuid;
         this.spleefKit = new SpleefKit();
-        this.arenaScoreboard = new ArenaScoreboard(gameManager, "Spleef");
+        this.arenaScoreboard = new ArenaScoreboard(gameManager, "Spleef Fight");
         Bukkit.getPluginManager().registerEvents(this, gameManager.getPlugin());
 
         allowToBreak.add(Material.SNOW_BLOCK);
@@ -93,7 +96,8 @@ public class Spleef implements Game, Listener {
     @Override
     public void setArena(ArenaInstance arena) {
         arenaInstance = arena;
-        arenaInstance.setSchemName(gameManager.getMapSettings().spleefMaps.get(random.nextInt(gameManager.getMapSettings().spleefMaps.size())).getSchematicName());
+        map = gameManager.getMapSettings().spleefMaps.get(random.nextInt(gameManager.getMapSettings().spleefMaps.size()));
+        arenaInstance.setSchemName(map.getSchematicName());
     }
 
     @Override
@@ -102,7 +106,7 @@ public class Spleef implements Game, Listener {
         System.out.println("start called");
         arenaScoreboard.addPlayersToScoreboard(uuid);
         arenaScoreboard.updateLives(uuid);
-        teleportToSpawnLocations();
+        gameManager.teleportToSpawnLocations(map, arenaInstance, arenaScoreboard, spleefKit, uuid, spawnLocations, spawnLocationsStart);
     }
 
     @Override
@@ -113,64 +117,8 @@ public class Spleef implements Game, Listener {
     }
 
     @Override
-    public void teleportToSpawnLocations() {
-            Map maps = gameManager.getMapSettings().spleefMaps.get(0);
-            maps.getSpawnpoints(arenaInstance.getLocation()).forEach(location -> {
-                spawnLocationsStart.put(location, false);
-                System.out.println("added a spawn " + location);
-            });
-            ArrayList<UUID> alreadyTeleported = new ArrayList<>();
-            if (gameManager.getPlayers(uuid).size() <= 2) {
-                for(UUID pUuid : gameManager.getPlayers(uuid)) {
-                    Player player = Bukkit.getPlayer(pUuid);
-                    if(player.isDead()) {
-                        player.spigot().respawn();
-                    }
-                    for (java.util.Map.Entry<Location, Boolean> entry : spawnLocationsStart.entrySet()) {
-                        Boolean used = entry.getValue();
-                        Location loc = entry.getKey();
-                        if (!used && !alreadyTeleported.contains(pUuid)) {
-                            spawnLocations.put(player.getUniqueId(), loc);
-                            spawnLocationsStart.replace(loc, true);
-                            player.spigot().respawn();
-                            player.teleport(loc);
-                            alreadyTeleported.add(pUuid);
-                            player.setGameMode(GameMode.SURVIVAL);
-                            giveKit(player);
-                        }
-                    }
-                }
-            } else {
-                for(JScoreboardTeam team : arenaScoreboard.getScoreboard().getTeams()) { // insert get scoreboardteam
-                    Location loc = null;
-                    for (java.util.Map.Entry<Location, Boolean> entry : spawnLocationsStart.entrySet()) {
-                        if (!entry.getValue()) {
-                            loc = entry.getKey();
-                            break;
-                        }
-                    }
-                    spawnLocationsStart.replace(loc,true);
-                    for (UUID p : team.getEntities()) {
-                        Player player = Bukkit.getPlayer(p);
-                        player.spigot().respawn();
-                        spawnLocations.put(player.getUniqueId(), loc);
-                        player.teleport(loc);
-                        alreadyTeleported.add(p);
-                        player.setGameMode(GameMode.SURVIVAL);
-                        giveKit(player);
-                    }
-                }
-                for (java.util.Map.Entry<Location, Boolean> entry : spawnLocationsStart.entrySet()) {
-                    Location loc = entry.getKey();
-                }
-            }
-        }
-
-    @Override
     public void someoneJoined(Player player, boolean spectator) {
-        if(!spectator) {
-            player.sendMessage(ChatUtil.clr("&7You have been put in to " + uuid));
-        }
+        gameManager.onJoin(player, spectator, uuid);
     }
 
     @Override
@@ -235,7 +183,7 @@ public class Spleef implements Game, Listener {
             if(gameManager.getPlayersAlive(uuid).size() >= 2) {
                 if(gameManager.getTeamsAlive(uuid).size() <= 1) {
                     setGameState(GameState.WON);
-                    gameManager.endGame(uuid, true);
+                    gameManager.endGame(uuid, true, false);
                     return;
                 }
             }
@@ -243,7 +191,7 @@ public class Spleef implements Game, Listener {
         if(gameManager.getPlayersAlive(uuid).size() <= 1) {
             System.out.println("ending game");
             setGameState(GameState.WON);
-            gameManager.endGame(uuid, false);
+            gameManager.endGame(uuid, false, false);
         }
     }
 
@@ -294,35 +242,16 @@ public class Spleef implements Game, Listener {
         spleefKit.giveKit(player);
     }
 
-    @EventHandler
+    @EventHandler(priority = EventPriority.NORMAL)
     public void onDamage(EntityDamageByEntityEvent e) {
-        if(gameState != GameState.ACTIVE) {
+        if(!getPlayers().contains(e.getDamager().getUniqueId())) return;
+        if(gameState == GameState.WON) {
             e.setCancelled(true);
-            e.getEntity().sendMessage(ChatUtil.clr("&cThe game has ended!"));
+            e.getDamager().sendMessage(ChatUtil.clr("&cThe game has ended!"));
             return;
         }
         if(!getPlayers().contains(e.getEntity().getUniqueId())) return;
-        if(e.getDamager() instanceof Snowball && e.getEntity() instanceof Player) {
-            Projectile p = (Projectile)e.getDamager();
-            Player shooter = (Player) p.getShooter();
-            if(p.getShooter() instanceof Player) {
-                if(shooter.getScoreboard().getPlayerTeam(shooter).getEntries().contains(e.getEntity().getName())) {
-                    shooter.sendMessage(ChatUtil.clr("&cFriendly fire is disabled."));
-                    e.setCancelled(true);
-                    return;
-                }
-            }
-        }
-        if(e.getDamager() instanceof Player && e.getEntity() instanceof Player) {
-            Player damager = (Player) e.getDamager();
-            Player target = (Player) e.getEntity();
-            if(damager.getScoreboard().getPlayerTeam(damager).getEntries().contains(target.getName())) {
-                damager.sendMessage(ChatUtil.clr("&cFriendly fire is disabled."));
-                e.setCancelled(true);
-                return;
-            }
-            e.setCancelled(true);
-        }
+        e.setCancelled(true);
     }
 
     @EventHandler
@@ -389,6 +318,7 @@ public class Spleef implements Game, Listener {
                     e.setCancelled(true);
                 }
             } else {
+                e.getBlock().setType(Material.AIR);
                 Location checkLoc = e.getBlock().getLocation();
                 for(UUID p : getPlayers()) {
                     Player pl = Bukkit.getPlayer(p);
@@ -403,8 +333,10 @@ public class Spleef implements Game, Listener {
                         }
                     }
                 }
-                ItemStack snowball = new ItemBuilder(Material.SNOW_BALL).setAmount(1).build();
-                e.getPlayer().getInventory().addItem(snowball);
+                if(random.nextInt(3) == 1) {
+                    ItemStack snowball = new ItemBuilder(Material.SNOW_BALL).setAmount(1).build();
+                    e.getPlayer().getInventory().addItem(snowball);
+                }
             }
         }
     }

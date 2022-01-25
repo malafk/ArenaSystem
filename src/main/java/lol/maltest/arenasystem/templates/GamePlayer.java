@@ -13,6 +13,7 @@ public class GamePlayer {
     int lives;
     int kills;
     boolean spectator;
+    boolean completed;
 //    JScoreboardTeam team;
 
     public GamePlayer(UUID playerUuid, UUID gameUuid, int lives) {
@@ -21,6 +22,7 @@ public class GamePlayer {
         this.playerUuid = playerUuid;
         this.lives = lives;
         this.kills = 0;
+        this.completed = false;
     }
 
     public int getLives() {
@@ -49,6 +51,14 @@ public class GamePlayer {
 
     public void setSpectator(boolean yes) {
         spectator = yes;
+    }
+
+    public void setCompleted(boolean yes) {
+        completed = yes;
+    }
+
+    public boolean completed() {
+        return completed;
     }
 
     public boolean isSpectator() {

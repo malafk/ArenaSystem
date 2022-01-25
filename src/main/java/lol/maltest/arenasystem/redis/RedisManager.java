@@ -3,6 +3,7 @@ package lol.maltest.arenasystem.redis;
 import com.google.gson.Gson;
 import com.mojang.authlib.GameProfile;
 import lol.maltest.arenasystem.templates.Game;
+import lol.maltest.arenasystem.templates.games.parkourrace.ParkourRace;
 import lol.maltest.arenasystem.templates.games.pvpbrawl.PvPBrawl;
 import lol.maltest.arenasystem.templates.games.spleef.Spleef;
 import lol.maltest.arenasystem.templates.games.stickfight.StickFight;
@@ -90,6 +91,14 @@ public class RedisManager {
                                                 @Override
                                                 public void run() {
                                                     game = new StickFight(plugin.gameManager(), uuid);
+                                                }
+                                            }.runTask(plugin);
+                                            break;
+                                        case PARKOURRACE_SINGLES:
+                                            new BukkitRunnable() {
+                                                @Override
+                                                public void run() {
+                                                    game = new ParkourRace(plugin.gameManager(), uuid);
                                                 }
                                             }.runTask(plugin);
                                             break;

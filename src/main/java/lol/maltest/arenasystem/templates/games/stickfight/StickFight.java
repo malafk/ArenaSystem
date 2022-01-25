@@ -100,7 +100,7 @@ public class StickFight implements Game, Listener {
         System.out.println("start called");
         arenaScoreboard.addPlayersToScoreboard(uuid);
         arenaScoreboard.updateLives(uuid);
-        teleportToSpawnLocations();
+        gameManager.teleportToSpawnLocations(map, arenaInstance, arenaScoreboard, stickFightKit, uuid, spawnLocations, spawnLocationsStart);
     }
 
     @Override
@@ -111,88 +111,8 @@ public class StickFight implements Game, Listener {
     }
 
     @Override
-    public void teleportToSpawnLocations() {
-//        for(Map map : gameManager.getMapSettings().stickFightMaps) {
-//            if(map.getSchematicName().equals(getArenaSchematic())) {
-//                System.out.println("done added spawnlocs");
-//                map.getSpawnpoints(arenaInstance.getLocation()).forEach(loc -> spawnLocations.put(loc, false));
-//            }
-//        }
-//        gameManager.getMapSettings().stickFightMaps.forEach(loc -> {
-//            if(loc.getSchematicName().equals(arenaInstance.getSchemName())) {
-//                loc.getSpawnpoints(arenaInstance.getLocation()).forEach(location -> spawnLocations.put(location, false));
-//                System.out.println("added a spawnpoint");
-//                return;
-//            }
-//        });
-        map.getSpawnpoints(arenaInstance.getLocation()).forEach(location -> {
-            spawnLocationsStart.put(location, false);
-            System.out.println("added a spawn " + location);
-        });
-        ArrayList<UUID> alreadyTeleported = new ArrayList<>();
-        if (gameManager.getPlayers(uuid).size() <= 2) {
-            for(UUID pUuid : gameManager.getPlayers(uuid)) {
-                Player player = Bukkit.getPlayer(pUuid);
-                if(player.isDead()) {
-                    player.spigot().respawn();
-                }
-                for (java.util.Map.Entry<Location, Boolean> entry : spawnLocationsStart.entrySet()) {
-                    Boolean used = entry.getValue();
-                    Location loc = entry.getKey();
-                    if (!used && !alreadyTeleported.contains(pUuid)) {
-                        player.spigot().respawn();
-                        spawnLocations.put(player.getUniqueId(), loc);
-                        spawnLocationsStart.replace(loc, true);
-                        player.teleport(loc);
-                        System.out.println("teleported " + player + " to " + loc);
-                        alreadyTeleported.add(pUuid);
-                        player.setGameMode(GameMode.SURVIVAL);
-                        giveKit(player);
-                    }
-                }
-            }
-        } else {
-            for(JScoreboardTeam team : arenaScoreboard.getScoreboard().getTeams()) { // insert get scoreboardteam
-                Location loc = null;
-                for (java.util.Map.Entry<Location, Boolean> entry : spawnLocationsStart.entrySet()) {
-                    if (!entry.getValue()) {
-                        loc = entry.getKey();
-                        break;
-                    }
-                }
-                spawnLocationsStart.replace(loc,true);
-                for (UUID p : team.getEntities()) {
-                    Player player = Bukkit.getPlayer(p);
-                    player.spigot().respawn();
-                    spawnLocations.put(player.getUniqueId(), loc);
-                    player.teleport(loc);
-                    System.out.println("teleported " + player + " to " + loc);
-                    alreadyTeleported.add(p);
-                    player.setGameMode(GameMode.SURVIVAL);
-                    giveKit(player);
-                }
-            }
-            for (java.util.Map.Entry<Location, Boolean> entry : spawnLocationsStart.entrySet()) {
-                Location loc = entry.getKey();
-            }
-        }
-//        for(UUID pUuid : gameManager.getPlayers(uuid)) {
-//            for(Location loc : spawnLocations.keySet()) {
-//                for(Boolean used : spawnLocations.values()) {
-//                    if(!used) {
-//                        player.teleport(loc);
-//                        spawnLocations.replace(loc, true);
-//                    }
-//                }
-//            }
-//        }
-    }
-
-    @Override
     public void someoneJoined(Player player, boolean spectator) {
-        if(!spectator) {
-            player.sendMessage(ChatUtil.clr("&7You have been put in to " + uuid));
-        }
+        gameManager.onJoin(player, spectator, uuid);
     }
 
     @Override
@@ -250,10 +170,7 @@ public class StickFight implements Game, Listener {
 
     @Override
     public void broadcastMessage(String message) {
-        gameManager.getPlayers(uuid).forEach(p -> {
-            Player player = Bukkit.getPlayer(p);
-            player.sendMessage(ChatUtil.clr(message));
-        });
+        gameManager.broadcastMessage(message, uuid);
     }
 
     @Override
@@ -263,7 +180,7 @@ public class StickFight implements Game, Listener {
             if(gameManager.getPlayersAlive(uuid).size() >= 2) {
                 if(gameManager.getTeamsAlive(uuid).size() <= 1) {
                     setGameState(GameState.WON);
-                    gameManager.endGame(uuid, true);
+                    gameManager.endGame(uuid, true, false);
                     return;
                 }
             }
@@ -271,7 +188,7 @@ public class StickFight implements Game, Listener {
         if(gameManager.getPlayersAlive(uuid).size() <= 1) {
             System.out.println("ending game");
             setGameState(GameState.WON);
-            gameManager.endGame(uuid, false);
+            gameManager.endGame(uuid, false, false);
         }
     }
 
@@ -320,10 +237,10 @@ public class StickFight implements Game, Listener {
     
     @EventHandler
     public void onDamage(EntityDamageByEntityEvent e) {
-        if(!getPlayers().contains(e.getEntity().getUniqueId())) return;
-        if(gameState != GameState.ACTIVE) {
+        if(!getPlayers().contains(e.getDamager().getUniqueId())) return;
+        if(gameState == GameState.WON) {
             e.setCancelled(true);
-            e.getEntity().sendMessage(ChatUtil.clr("&cThe game has ended!"));
+            e.getDamager().sendMessage(ChatUtil.clr("&cThe game has ended!"));
             return;
         }
         if(e.getDamager() instanceof Player && e.getEntity() instanceof Player) {

@@ -28,6 +28,9 @@ public class GameGame implements Listener {
         WON,
     }
 
+    /*
+    OLD FILE DONT LOOK AT THIS SHIT
+     */
 
     public ArenaManager arenaManager;
     public UUID gameUuid;

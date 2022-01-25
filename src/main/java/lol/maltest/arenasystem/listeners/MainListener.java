@@ -117,6 +117,7 @@ public class MainListener implements Listener {
                 e.setCancelled(true);
             }
             if(e.getCause().equals(EntityDamageEvent.DamageCause.FALL)) {
+                e.setCancelled(true);
                 e.setDamage(0);
             }
         }

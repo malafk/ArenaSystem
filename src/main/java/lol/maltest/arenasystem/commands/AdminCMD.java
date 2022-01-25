@@ -38,7 +38,7 @@ public class AdminCMD implements CommandExecutor {
                                     Player target = Bukkit.getPlayer(args[1]);
                                     if(plugin.gameManager().getPlayerObject(target.getUniqueId()) != null) {
                                         Game game =  plugin.gameManager().getGame(plugin.gameManager().getPlayerObject(target.getUniqueId()).getGameUuid());
-                                        plugin.gameManager().endGame(plugin.gameManager().getPlayerObject(target.getUniqueId()).getGameUuid(), false);
+                                        plugin.gameManager().endGame(plugin.gameManager().getPlayerObject(target.getUniqueId()).getGameUuid(), false, false);
                                         player.sendMessage(ChatUtil.clr("&aDone"));
                                     }
                                 }
