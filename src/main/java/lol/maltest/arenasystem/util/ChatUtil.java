@@ -14,16 +14,4 @@ public class ChatUtil {
     public static String clr(String messgae) {
         return ChatColor.translateAlternateColorCodes('&', messgae);
     }
-
-    public static void setActionBarFor(Player player, WrappedChatComponent text) {
-        ProtocolManager protocolManager = ProtocolLibrary.getProtocolManager();
-        PacketContainer chatPacket = protocolManager.createPacket(PacketType.Play.Server.CHAT);
-        chatPacket.getChatComponents().write(0, text);
-        chatPacket.getBytes().write(0, (byte) 2);
-        try {
-            protocolManager.sendServerPacket(player, chatPacket);
-        } catch (InvocationTargetException e) {
-            throw new RuntimeException(e);
-        }
-    }
 }
