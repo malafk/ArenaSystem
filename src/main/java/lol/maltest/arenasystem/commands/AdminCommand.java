@@ -1,6 +1,5 @@
 package lol.maltest.arenasystem.commands;
 
-import com.mojang.authlib.GameProfile;
 import lol.maltest.arenasystem.ArenaSystem;
 import lol.maltest.arenasystem.templates.Game;
 import lol.maltest.arenasystem.util.ChatUtil;
@@ -11,13 +10,12 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicReference;
 
-public class AdminCMD implements CommandExecutor {
+public class AdminCommand implements CommandExecutor {
 
     private ArenaSystem plugin;
 
-    public AdminCMD(ArenaSystem plugin) {
+    public AdminCommand(ArenaSystem plugin) {
         this.plugin = plugin;
     }
 

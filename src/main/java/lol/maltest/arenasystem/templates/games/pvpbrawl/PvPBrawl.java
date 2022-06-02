@@ -86,6 +86,7 @@ public class PvPBrawl implements Game, Listener {
         this.arenaScoreboard = new ArenaScoreboard(gameManager, "PvP Brawl");
         Bukkit.getPluginManager().registerEvents(this, gameManager.getPlugin());
 
+        thisGameFlags.blockPlaceAllowed.add(Material.FIRE);
         thisGameFlags.blockBreakAllowed = allowToBreak;
         thisGameFlags.canBreakBlocks = false;
         thisGameFlags.canPlaceBlocks = false;
@@ -181,6 +182,7 @@ public class PvPBrawl implements Game, Listener {
             if(gameManager.getPlayersAlive(uuid).size() >= 2) {
                 if(gameManager.getTeamsAlive(uuid).size() <= 1) {
                     setGameState(GameState.WON);
+                    gameManager.updateStats(uuid, "pvpbrawl");
                     gameManager.endGame(uuid, true, false);
                     return;
                 }
@@ -189,6 +191,7 @@ public class PvPBrawl implements Game, Listener {
         if(gameManager.getPlayersAlive(uuid).size() <= 1) {
             System.out.println("ending game");
             setGameState(GameState.WON);
+            gameManager.updateStats(uuid, "pvpbrawl");
             gameManager.endGame(uuid, false, false);
         }
     }
@@ -257,21 +260,27 @@ public class PvPBrawl implements Game, Listener {
                 e.setCancelled(true);
                 return;
             }
-        }
-    }
-
-    @EventHandler
-    public void onDamage(EntityDamageEvent e) {
-        if(!getPlayers().contains(e.getEntity().getUniqueId())) return;
-        if(gameState != GameState.ACTIVE) return;
-        if(e.getEntity() instanceof Player) {
-            Player target = (Player) e.getEntity();
             if(target.getHealth() - e.getFinalDamage() < 0.5) {
+                gameManager.getPlayerObject(damager.getUniqueId()).addKill(1);
                 doDeath(target);
-                broadcastMessage("&e" + target.getName() + " &7was killed!");
+                broadcastMessage("&e" + target.getName() + " &7was killed by &e" + damager.getName());
+                e.setDamage(0);
             }
         }
     }
+
+//    @EventHandler
+//    public void onDamage(EntityDamageEvent e) {
+//        if(!getPlayers().contains(e.getEntity().getUniqueId())) return;
+//        if(gameState != GameState.ACTIVE) return;
+//        if(e.getEntity() instanceof Player) {
+//            Player target = (Player) e.getEntity();
+//            if(target.getHealth() - e.getFinalDamage() < 0.5) {
+//                doDeath(target);
+//                broadcastMessage("&e" + target.getName() + " &7was killed!");
+//            }
+//        }
+//    }
 
     @EventHandler
     public void playerMoveEvent(PlayerMoveEvent e) {

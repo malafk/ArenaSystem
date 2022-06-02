@@ -110,12 +110,15 @@ public class ParkourRace implements Game, Listener {
         if(gameManager.getPlayers(uuid).size() >= 2) {
             if(gameManager.getTeamsCompleted(uuid).size() == 1) {
                 setGameState(GameState.WON);
+                gameManager.updateStats(uuid, "parkourrace");
                 gameManager.endGame(uuid, true, true);
+                // teams
                 return;
             }
         }
         if(gameManager.getPlayersAlive(uuid).size() <= 1) {
             setGameState(GameState.WON);
+            gameManager.updateStats(uuid, "parkourrace");
             gameManager.endGame(uuid, false, true);
         }
     }
@@ -153,6 +156,7 @@ public class ParkourRace implements Game, Listener {
     @EventHandler
     public void onMove(PlayerInteractEvent e) {
         if(!gameManager.getPlayers(uuid).contains(e.getPlayer().getUniqueId())) return;
+        if(gameState == GameState.WON) return;
         if(gameManager.isSpec(e.getPlayer())) return;
 
         if (e.getAction() != Action.PHYSICAL) {

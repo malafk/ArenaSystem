@@ -2,36 +2,39 @@ package lol.maltest.arenasystem;
 
 import com.comphenix.protocol.ProtocolLibrary;
 import com.comphenix.protocol.ProtocolManager;
-import com.google.common.io.ByteArrayDataInput;
-import com.google.common.io.ByteArrayDataOutput;
-import com.google.common.io.ByteStreams;
-import com.sk89q.worldedit.EditSession;
-import lol.maltest.arenasystem.arena.ArenaInstance;
-import lol.maltest.arenasystem.arena.ArenaManager;
-import lol.maltest.arenasystem.commands.AdminCMD;
+import lol.maltest.arenasystem.commands.AdminCommand;
 import lol.maltest.arenasystem.commands.MakeVoid;
 import lol.maltest.arenasystem.commands.PasteSchematic;
 import lol.maltest.arenasystem.commands.TestPaste;
+import lol.maltest.arenasystem.impl.PlayerManager;
+import lol.maltest.arenasystem.impl.PlayerObject;
+import lol.maltest.arenasystem.impl.sql.MySQL;
+import lol.maltest.arenasystem.impl.sql.SQLMethods;
 import lol.maltest.arenasystem.listeners.MainListener;
 import lol.maltest.arenasystem.redis.MessageAction;
 import lol.maltest.arenasystem.redis.RedisManager;
 import lol.maltest.arenasystem.redis.RedisMessage;
-import org.bukkit.Bukkit;
 import org.bukkit.configuration.file.FileConfiguration;
-import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.bukkit.plugin.messaging.PluginMessageListener;
-import redis.clients.jedis.JedisPool;
 
+import java.sql.SQLException;
 import java.util.HashMap;
+import java.util.UUID;
 
 public final class ArenaSystem extends JavaPlugin {
 
     private ArenaSystem plugin;
     private GameManager gameManager;
+
+    private PlayerManager playerManager;
     public RedisManager redisManager;
     ProtocolManager manager;
     private boolean j = true;
+
+    public MySQL sql;
+    public SQLMethods data;
+
+    public HashMap<UUID, PlayerObject> playerData = new HashMap<>();
 
     @Override
     public void onEnable() {
@@ -44,6 +47,21 @@ public final class ArenaSystem extends JavaPlugin {
         }
 
         this.gameManager = new GameManager(this);
+        this.playerManager = new PlayerManager(this);
+
+        this.sql = new MySQL();
+        this.data = new SQLMethods(this);
+        try {
+            sql.connect();
+        } catch (ClassNotFoundException | SQLException e) {
+            e.printStackTrace();
+        }
+
+        if(sql.isConnected()) {
+            System.out.println("[MiniGames] connected to database.");
+            data.createTable();
+        }
+
 
         manager = ProtocolLibrary.getProtocolManager();
 
@@ -55,7 +73,7 @@ public final class ArenaSystem extends JavaPlugin {
 
         getCommand("testpaste").setExecutor(new TestPaste(this));
         getCommand("makevoid").setExecutor(new MakeVoid());
-        getCommand("admin").setExecutor(new AdminCMD(this));
+        getCommand("admin").setExecutor(new AdminCommand(this));
         getCommand("pasteschematic").setExecutor(new PasteSchematic());
 
         if(j) {
@@ -80,9 +98,17 @@ public final class ArenaSystem extends JavaPlugin {
             System.out.println("done");
             plugin.redisManager.subscriber.close();
         }
+        try {
+            sql.disconnect();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
         // Plugin shutdown logic
     }
 
+    public HashMap<UUID, PlayerObject> getPlayerData() {
+        return playerData;
+    }
 
     public GameManager gameManager() {
         return gameManager;
@@ -92,4 +118,7 @@ public final class ArenaSystem extends JavaPlugin {
         return manager;
     }
 
+    public PlayerManager getPlayerManager() {
+        return playerManager;
+    }
 }

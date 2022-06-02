@@ -21,6 +21,7 @@ import org.bukkit.event.player.*;
 import org.bukkit.event.weather.WeatherChangeEvent;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
+import org.bukkit.scheduler.BukkitRunnable;
 
 public class MainListener implements Listener {
 
@@ -75,10 +76,22 @@ public class MainListener implements Listener {
         for(PotionEffect effect:player.getActivePotionEffects()){
             player.removePotionEffect(effect.getType());
         }
+        player.setFireTicks(0);
         player.setAllowFlight(false);
         player.setFlying(false);
         player.teleport(new Location(Bukkit.getWorld("void"), 0, 64, 0));
         e.setJoinMessage(null);
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                if(plugin.gameManager().getPlayerObject(player.getUniqueId()) != null) {
+                    plugin.getPlayerManager().loadStats(player);
+                    System.out.println("loaded " + player.getName() + " stats");
+                } else {
+                    System.out.println("tried to load stats for " +player.getName() + " when they wernet in game");
+                }
+            }
+        }.runTaskLater(plugin, 20 * 2);
     }
 
     @EventHandler
@@ -164,7 +177,7 @@ public class MainListener implements Listener {
 
     @EventHandler
     public void onPvp(EntityDamageByEntityEvent e) {
-        if(e.getEntity() instanceof Player) {
+        if(e.getEntity() instanceof Player && e.getDamager() instanceof Player) {
             if(plugin.gameManager().getPlayerObject(e.getDamager().getUniqueId()).isSpectator()) e.setCancelled(true);
             System.out.println(e.getDamager().getName() +" tried to hit in spectator");
         }

@@ -5,6 +5,8 @@
 *.ipr
 *.iws
 
+src/main/java/lol/maltest/arenasystem/templates/GameGame.java
+
 # IntelliJ
 out/
 

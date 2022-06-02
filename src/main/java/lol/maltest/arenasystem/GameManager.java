@@ -4,6 +4,7 @@ import dev.jcsoftware.jscoreboards.JScoreboardTeam;
 import lol.maltest.arenasystem.arena.ArenaInstance;
 import lol.maltest.arenasystem.arena.ArenaManager;
 import lol.maltest.arenasystem.arena.ArenaScoreboard;
+import lol.maltest.arenasystem.impl.PlayerObject;
 import lol.maltest.arenasystem.map.MapSettings;
 import lol.maltest.arenasystem.redis.MessageAction;
 import lol.maltest.arenasystem.redis.RedisMessage;
@@ -47,15 +48,9 @@ public class GameManager {
 
     private HashMap<UUID, Game> activeGames = new HashMap<>();
     private HashMap<GamePlayer, UUID> playerGame = new HashMap<>();
+    private HashMap<UUID, UUID> playerGamesStatic = new HashMap<>();
     // player, game
-
     public void addGame(UUID gameUuid, Game game) {
-        // this is what happens when we want to create a new game instance
-
-        // first of all, we need to create the arena
-        // ask the game what schematic it needs us to paste
-
-        // create an arena for the game
         ArenaInstance arena = new ArenaInstance(this);
         game.setArena(arena);
         activeGames.put(gameUuid, game);
@@ -70,6 +65,7 @@ public class GameManager {
         System.out.println(player.getName() + " got added to a game");
 
         playerGame.put(new GamePlayer(player.getUniqueId(), gameUuid, lives), gameUuid);
+        playerGamesStatic.put(player.getUniqueId(), gameUuid);
 
         game.someoneJoined(player, spectator);
 
@@ -93,6 +89,7 @@ public class GameManager {
             Player finalPlayer = Bukkit.getPlayer(UUID.fromString(p));
 //            System.out.println(finalPlayer.getName() + " got added to a game");
             playerGame.put(new GamePlayer(finalPlayer.getUniqueId(), gameUuid, lives), gameUuid);
+            playerGamesStatic.put(finalPlayer.getUniqueId(), gameUuid);
             game.someoneJoined(finalPlayer, spectator);
         });
 
@@ -117,6 +114,8 @@ public class GameManager {
             Player finalPlayer = Bukkit.getPlayer(p);
 //            System.out.println(finalPlayer.getName() + " got added to a game");
             playerGame.put(new GamePlayer(finalPlayer.getUniqueId(), gameUuid, lives), gameUuid);
+            playerGamesStatic.put(finalPlayer.getUniqueId(), gameUuid);
+
             game.someoneJoined(finalPlayer, spectator);
         });
 
@@ -184,6 +183,14 @@ public class GameManager {
                 });
             }
         }
+
+        getPlayersStatic(uuid).forEach(p -> {
+            System.out.println("Saving player data for " + p);
+//            plugin.getPlayerData().get(p).save();
+            plugin.getPlayerManager().save(p);
+            plugin.getPlayerData().remove(p);
+        });
+
         if(!noWinner) {
             Player finalWhoWon = whoWon;
             new BukkitRunnable() {
@@ -286,6 +293,7 @@ public class GameManager {
                     removeFromGames(player);
                     game.end();
                     playerGame.remove(getPlayerObject(p));
+                    playerGamesStatic.remove(p);
                 });
                 activeGames.remove(uuid);
             }
@@ -385,6 +393,16 @@ public class GameManager {
         return players;
     }
 
+    public ArrayList<UUID> getPlayersStatic(UUID gameUuid) {
+        ArrayList<UUID> players = new ArrayList<>();
+        for(Map.Entry<UUID, UUID> player : playerGamesStatic.entrySet()) {
+           if(player.getValue().equals(gameUuid)) {
+               players.add(player.getKey());
+           }
+        }
+        return players;
+    }
+
     public HashMap<UUID, Integer> getKillers(UUID gameUuid) {
         HashMap<UUID, Integer> killers = new HashMap<>();
         for(GamePlayer player : playerGame.keySet()) {
@@ -465,6 +483,66 @@ public class GameManager {
             player.setAllowFlight(false);
             player.setFlying(false);
         }
+    }
+
+    public void addStats(UUID player, String game, int wins, int kills) {
+        if(plugin.getPlayerData().get(player) == null) {
+            System.out.println("Couldn't find " + player + "'s playerdata");
+        }
+        PlayerObject playerObject = plugin.getPlayerData().get(player);
+        switch (game) {
+            case "tntrun":
+                playerObject.addTntRunWins(wins);
+                playerObject.addTntRunGames(1);
+                break;
+            case "spleef":
+                playerObject.addSpleefWins(wins);
+                playerObject.addSpleefGames(1);
+                break;
+            case "parkourrace":
+                playerObject.addPkRaceWins(wins);
+                playerObject.addPkRaceGames(1);
+                break;
+            case "stickfight":
+                playerObject.addStickFightWins(wins);
+                playerObject.addStickFightKills(kills);
+                playerObject.addStickfightGames(1);
+                break;
+            case "pvpbrawl":
+                playerObject.addPvpBrawlWins(wins);
+                playerObject.addPvpBrawlKills(kills);
+                playerObject.addPvpBrawlGames(1);
+                break;
+            default:
+                System.out.println("adding a invalid stat? " +game);
+                break;
+        }
+        playerObject.addTotalGames(1);
+        playerObject.addTotalKills(kills);
+        playerObject.addTotalWins(wins);
+    }
+
+    public void updateStats(UUID uuid, String gameName) {
+        getPlayersStatic(uuid).forEach(p -> {
+            if (getPlayerObject(p) == null) {
+                System.out.println("looks like " + p + " left");
+                addStats(p, gameName, 0, 0);
+            } else {
+                if (gameName.equals("parkourrace")) {
+                    if (getPlayerObject(p).completed()) {
+                        addStats(p, gameName, 1, getPlayerObject(p).getKills());
+                        System.out.println("Did win " + p);
+                    }
+                }
+                if (getPlayerObject(p).getLives() > 0) {
+                    addStats(p, gameName, 1, getPlayerObject(p).getKills());
+                    System.out.println("Did win " + p);
+                } else {
+                    addStats(p, gameName, 0, getPlayerObject(p).getKills());
+                    System.out.println("Didn't win " + p);
+                }
+            }
+        });
     }
 
     public void teleportToSpawnLocations(lol.maltest.arenasystem.map.Map maps, ArenaInstance arenaInstance, ArenaScoreboard arenaScoreboard, Kit kit, UUID gameUuid, HashMap<UUID, Location> spawnLocations, HashMap<Location, Boolean> spawnLocationsStart) {

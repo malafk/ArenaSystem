@@ -180,6 +180,7 @@ public class StickFight implements Game, Listener {
             if(gameManager.getPlayersAlive(uuid).size() >= 2) {
                 if(gameManager.getTeamsAlive(uuid).size() <= 1) {
                     setGameState(GameState.WON);
+                    gameManager.updateStats(uuid, "stickfight");
                     gameManager.endGame(uuid, true, false);
                     return;
                 }
@@ -188,6 +189,7 @@ public class StickFight implements Game, Listener {
         if(gameManager.getPlayersAlive(uuid).size() <= 1) {
             System.out.println("ending game");
             setGameState(GameState.WON);
+            gameManager.updateStats(uuid, "stickfight");
             gameManager.endGame(uuid, false, false);
         }
     }
@@ -255,9 +257,9 @@ public class StickFight implements Game, Listener {
 //            lasthit = target.getUniqueId();
 //            whohit = damager.getUniqueId();
             if(target.getHealth() - e.getFinalDamage() < 0.5) {
+                gameManager.getPlayerObject(damager.getUniqueId()).addKill(1);
                 doDeath(target);
                 broadcastMessage("&e" + target.getName() + " &7was killed by &e" + damager.getName());
-                gameManager.getPlayerObject(damager.getUniqueId()).addKill(1);
             }
         }
     }
@@ -414,9 +416,7 @@ public class StickFight implements Game, Listener {
 
     private static int getBlockEntityId(Block block) {
         // There will be some overlap here, but these effects are very localized so it should be OK.
-        return   ((block.getX() & 0xFFF) << 20)
-                | ((block.getZ() & 0xFFF) << 8)
-                | (block.getY() & 0xFF);
+        return   ((block.getX() & 0xFFF) << 20) | ((block.getZ() & 0xFFF) << 8) | (block.getY() & 0xFF);
     }
 
 }

@@ -183,6 +183,7 @@ public class Spleef implements Game, Listener {
             if(gameManager.getPlayersAlive(uuid).size() >= 2) {
                 if(gameManager.getTeamsAlive(uuid).size() <= 1) {
                     setGameState(GameState.WON);
+                    gameManager.updateStats(uuid, "spleef");
                     gameManager.endGame(uuid, true, false);
                     return;
                 }
@@ -191,6 +192,7 @@ public class Spleef implements Game, Listener {
         if(gameManager.getPlayersAlive(uuid).size() <= 1) {
             System.out.println("ending game");
             setGameState(GameState.WON);
+            gameManager.updateStats(uuid, "spleef");
             gameManager.endGame(uuid, false, false);
         }
     }

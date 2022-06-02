@@ -168,6 +168,7 @@ public class TntRun implements Game, Listener {
             if(gameManager.getPlayersAlive(uuid).size() >= 2) {
                 if(gameManager.getTeamsAlive(uuid).size() <= 1) {
                     setGameState(GameState.WON);
+                    gameManager.updateStats(uuid, "tntrun");
                     gameManager.endGame(uuid, true, false);
                     return;
                 }
@@ -176,6 +177,7 @@ public class TntRun implements Game, Listener {
         if(gameManager.getPlayersAlive(uuid).size() <= 1) {
             System.out.println("ending game");
             setGameState(GameState.WON);
+            gameManager.updateStats(uuid, "tntrun");
             gameManager.endGame(uuid, false, false);
         }
     }
